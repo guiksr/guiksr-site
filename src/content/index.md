@@ -3,7 +3,7 @@ title: olá, sou o guiksr
 kind: home
 ---
 
-:::right
+:::right{top}
 ![](/eu-720x960.jpg)
 :::
 

@@ -193,8 +193,9 @@ function trail(firstLeaf: HTMLElement) {
   }
 
   // --- margin lanes
-  // Side items sit at the height they appear in the text, 16px apart, kept inside the
-  // page: pushed down past the item above, then pulled back up from the end.
+  // Side items sit at the height they appear in the text, or at the top or bottom when
+  // pinned, 16px apart, kept inside the page: pushed down past the item above, then
+  // pulled back up from the end.
 
   const LANES = ['.trail-nav.prev:not([hidden]), .side.left, .trail-nav.next:not([hidden])', '.side.right'];
   const GAP = 16;
@@ -208,17 +209,17 @@ function trail(firstLeaf: HTMLElement) {
           el.style.translate = '';
           return false;
         })
-        .map((el) => ({
-          el,
-          top: el.offsetTop,
-          h: el.offsetHeight,
-          y: 0,
-          pin: el.classList.contains('prev') ? 'top' : el.classList.contains('next') ? 'end' : null,
-        }));
+        .map((el) => {
+          const pin = el.classList.contains('prev') ? 'top' : el.classList.contains('next') ? 'bottom' : el.dataset.pin;
+          const top = el.offsetTop;
+          const h = el.offsetHeight;
+          return { el, top, h, y: 0, pin, want: pin === 'top' ? 0 : pin === 'bottom' ? height - h : top };
+        })
+        .sort((a, b) => a.want - b.want);
 
       let floor = 0;
       for (const it of items) {
-        it.y = Math.max(it.pin === 'end' ? height - it.h : it.top, floor);
+        it.y = Math.max(it.want, floor);
         floor = it.y + it.h + GAP;
       }
       const pushed = items.map((it) => it.y);

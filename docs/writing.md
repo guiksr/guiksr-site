@@ -103,7 +103,15 @@ nota: anything beside the text, even a photo.
 :::
 ```
 
-On wide screens (over 1000px) they move into the side lanes, at the height where they appear in the text, so place them right before the paragraph they belong to. They never overlap and never run past the end of the page. On narrow screens they sit in the text where you wrote them. `:::left` shares its lane with the "veio de / segue pra" links.
+On wide screens (over 1000px) they move into the side lanes. Where they go:
+
+| block              | position in the lane                                                     |
+| ------------------ | ------------------------------------------------------------------------ |
+| `:::right`         | beside the text that follows it: put it right before that paragraph      |
+| `:::right{top}`    | level with the top of the page (the path line)                           |
+| `:::right{bottom}` | flush with the end of the page                                           |
+
+The same works for `:::left` and `:::facts`. Notes in a lane are kept 16px apart, never overlap and never run past the page: if they don't fit where they want to be, the others move out of the way of the pinned ones. On narrow screens every note sits in the text where you wrote it, so write pinned notes where they also read well inline (a `{top}` note near the start, a `{bottom}` one near the end). `:::left` shares its lane with the "veio de" (always at the top) and "segue pra" (always at the bottom) links.
 
 ### `:::facts`: fact sheet
 

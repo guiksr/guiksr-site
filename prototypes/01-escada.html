@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>guiksr · protótipo 1: escada</title>
+  <link rel="stylesheet" href="shared/base.css">
+  <style>
+    /* windows slide along the staircase when the stack changes size on resize */
+    .win { transition: opacity 0.16s var(--ease), left var(--dur) var(--ease), top var(--dur) var(--ease); }
+  </style>
+</head>
+<body>
+  <main class="desk" id="desk">
+    <div class="canvas" id="cv"><svg class="wires" id="wires"></svg></div>
+  </main>
+  <div class="hint">clica num link pra abrir · scroll fora das janelas anda pelo rastro (↓ → próxima, ↑ ← anterior) · esc fecha a última</div>
+
+  <script src="shared/content.js"></script>
+  <script src="shared/ui.js"></script>
+  <script>
+    // Escada: one linear trail (like stacked notes). Each window sits one grid step
+    // right + down from the previous one. Opening a link from an older window cuts
+    // the trail there and continues from it.
+    const desk = document.getElementById('desk');
+    const cv = document.getElementById('cv');
+    const wires = document.getElementById('wires');
+    GK.mountBar('01-escada.html');
+
+    let stack = [], els = [], focus = 0;
+    const cam = { x: 0, y: 0 };
+
+    function dims() {
+      const narrow = innerWidth < 720;
+      if (narrow) return { narrow, W: innerWidth - 40, H: innerHeight - 64 - 3 * 36 - 16, SX: 8, SY: 36 };
+      const H = Math.max(320, Math.min(640, Math.floor((innerHeight - 128) / 40) * 40)); // capped so the previous step peeks above
+      return { narrow, W: 560, H, SX: 600, SY: 80 };
+    }
+
+    function render() {
+      els.splice(stack.length).forEach((el) => el.remove());
+      stack.forEach((slug, i) => {
+        if (els[i] && els[i].dataset.slug === slug) return;
+        if (els[i]) els[i].remove();
+        els[i] = GK.windowEl(slug);
+        cv.appendChild(els[i]);
+        GK.fadeIn(els[i]);
+      });
+      paint();
+    }
+
+    function paint() {
+      const d = dims();
+      els.forEach((el, i) => {
+        el.dataset.i = i;
+        Object.assign(el.style, {
+          left: i * d.SX + 'px', top: i * d.SY + 'px',
+          width: d.W + 'px', height: d.H + 'px',
+          zIndex: i === focus ? 999 : i + 1,
+        });
+        el.classList.toggle('is-focus', i === focus);
+        el.querySelector('.win-close').hidden = stack.length === 1;
+        el.querySelectorAll('.win-body a[data-slug]').forEach((a) => {
+          const inBL = !!a.closest('.backlinks');
+          a.classList.toggle('is-open', !inBL && a.dataset.slug === stack[i + 1]);
+          a.classList.toggle('is-from', inBL && a.dataset.slug === stack[i - 1]);
+        });
+      });
+      drawWires();
+    }
+
+    function drawWires() {
+      if (dims().narrow) { wires.innerHTML = ''; return; }
+      wires.innerHTML = els.slice(1).map((el, j) => GK.wire(els[j], el, stack[j + 1], j + 1 === focus)).join('');
+    }
+
+    function camTo(i, instant) {
+      const d = dims();
+      let sx, sy;
+      if (d.narrow) { sx = 20; sy = 64 + Math.min(i, 3) * d.SY; }
+      else {
+        sx = i === 0 ? Math.round((innerWidth - d.W) / 2) : Math.max(24, Math.min(innerWidth - d.W - 48, innerWidth / 2 + 40));
+        sy = Math.round((innerHeight - d.H) / 2); // focused window is always vertically centered
+      }
+      cam.x = Math.round(sx - i * d.SX);
+      cam.y = Math.round(sy - i * d.SY);
+      applyCam(!instant);
+    }
+
+    function applyCam(animate) {
+      desk.classList.toggle('is-animating', !!animate && !GK.reduced.matches);
+      cv.style.transform = `translate(${cam.x}px, ${cam.y}px)`;
+      desk.style.backgroundPosition = `${cam.x}px ${cam.y}px`;
+    }
+
+    function setFocus(i) {
+      focus = i;
+      paint();
+      camTo(i);
+    }
+
+    function open(i, slug) {
+      if (stack[i - 1] === slug) return setFocus(i - 1); // the way back is already open
+      if (stack[i + 1] === slug) return setFocus(i + 1);
+      stack = stack.slice(0, i + 1).concat(slug);
+      focus = stack.length - 1;
+      GK.writeHash(stack);
+      render();
+      camTo(focus);
+      els[focus].querySelector('.win-body').focus({ preventScroll: true });
+      setTimeout(drawWires, 340);
+    }
+
+    function close(i) {
+      stack = stack.slice(0, i);
+      if (!stack.length) stack = ['index'];
+      focus = stack.length - 1;
+      GK.writeHash(stack);
+      render();
+      camTo(focus);
+    }
+
+    function load() {
+      stack = GK.readHash();
+      if (!stack.length) { stack = ['index']; GK.writeHash(stack, true); }
+      focus = stack.length - 1;
+      render();
+    }
+
+    // --- events ---------------------------------------------------------------
+
+    cv.addEventListener('click', (e) => {
+      const win = e.target.closest('.win');
+      if (!win) return;
+      const i = +win.dataset.i;
+      if (e.target.closest('.win-close')) return close(i);
+      const a = e.target.closest('a[data-slug]');
+      if (a) {
+        if (GK.isModified(e)) return;
+        e.preventDefault();
+        return open(i, a.dataset.slug);
+      }
+      if (i !== focus) setFocus(i);
+    });
+
+    cv.addEventListener('focusin', (e) => {
+      if (!e.target.matches(':focus-visible')) return; // keyboard only: a mouse focus would pan the desk mid-click
+      const win = e.target.closest('.win');
+      if (win && +win.dataset.i !== focus) setFocus(+win.dataset.i);
+    });
+    cv.addEventListener('scroll', drawWires, true);
+    desk.addEventListener('scroll', () => desk.scrollTo(0, 0));
+
+    // Scroll outside the windows walks the trail, one window per gesture:
+    // down/right = next window, up/left = previous one.
+    const wheelStep = GK.wheelStepper((dir) => {
+      const i = focus + (dir === 'down' || dir === 'right' ? 1 : -1);
+      if (i >= 0 && i < stack.length) setFocus(i);
+    });
+    desk.addEventListener('wheel', (e) => {
+      if (e.target.closest('.win-body') || e.ctrlKey) return;
+      e.preventDefault();
+      wheelStep(e);
+    }, { passive: false });
+
+    addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' && focus > 0) setFocus(focus - 1);
+      else if (e.key === 'ArrowRight' && focus < stack.length - 1) setFocus(focus + 1);
+      else if (e.key === 'Escape' && stack.length > 1) close(stack.length - 1);
+    });
+
+    addEventListener('popstate', () => { load(); camTo(focus); });
+    addEventListener('resize', () => { paint(); camTo(focus, true); });
+
+    load();
+    camTo(focus, true);
+    document.fonts.ready.then(drawWires);
+  </script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>guiksr · protótipo 3: cascata</title>
+  <link rel="stylesheet" href="shared/base.css">
+  <style>
+    .win { transition: opacity 0.16s var(--ease), left var(--dur) var(--ease), top var(--dur) var(--ease); }
+    .win.is-min .win-body { display: none; }
+    .win.is-target { outline: 3px dashed var(--indigo); outline-offset: 5px; }
+    .win.is-flash .win-bar { background: var(--ink); color: var(--white); }
+  </style>
+</head>
+<body>
+  <main class="desk" id="desk">
+    <div class="canvas" id="cv"></div>
+  </main>
+  <div class="hint">clica numa janela pra trazer pra frente · duplo clique na barra minimiza · scroll no fundo passeia · passa o mouse num link pra achar a janela · esc fecha a de cima</div>
+
+  <script src="shared/content.js"></script>
+  <script src="shared/ui.js"></script>
+  <script>
+    // Cascata: a small window manager. One window per page, click to raise, every
+    // position on the 40px grid. No dragging: layout comes from cascata/grade.
+    // New windows cascade diagonally from the one
+    // you clicked in; "grade" lays them out as columns stepped down a diagonal.
+    // URL: slug:col:row[:m] per window, bottom to top.
+    const desk = document.getElementById('desk');
+    const cv = document.getElementById('cv');
+    const G = 40;
+    const bar = GK.mountBar('03-cascata.html',
+      '<button class="btn" data-arrange="cascade">cascata</button><button class="btn" data-arrange="grid">grade</button>');
+
+    let wins = []; // { slug, c, r, min } — last one is on top
+    const els = new Map(); // slug -> element
+    const cam = { x: 0, y: 0 };
+
+    function dims() {
+      const narrow = innerWidth < 720;
+      const W = narrow ? Math.floor((innerWidth - 24) / G) * G : 480;
+      const H = narrow ? Math.floor((innerHeight - 160) / G) * G : Math.max(320, Math.min(560, Math.floor((innerHeight - 128) / G) * G));
+      return { narrow, W, H };
+    }
+
+    // first visible grid cell below the top bar, in canvas coordinates
+    const origin = () => ({ c: Math.ceil((16 - cam.x) / G), r: Math.ceil((64 - cam.y) / G) });
+
+    function nextSlot(from) {
+      const d = dims(), o = origin();
+      if (!from) return { c: d.narrow ? o.c : Math.max(o.c, o.c + Math.round((innerWidth / 2 - d.W) / G)), r: o.r };
+      let slot = d.narrow ? { c: from.c, r: from.r + 1 } : { c: from.c + 2, r: from.r + 2 };
+      if ((slot.c * G + d.W + cam.x) > innerWidth - 16) slot.c = o.c + (d.narrow ? 0 : 1);  // wrap to left
+      for (let k = 0; k < 20 && wins.some((w) => w.c === slot.c && w.r === slot.r); k++) { slot.c += 1; slot.r += 1; }
+      return slot;
+    }
+
+    function parse() {
+      const out = [];
+      for (const part of GK.readHash()) {
+        const [slug, c, r, m] = part.split(':');
+        if (out.some((w) => w.slug === slug)) continue;
+        const w = { slug, min: m === 'm' };
+        Object.assign(w, c == null ? nextSlot(out[out.length - 1]) : { c: +c, r: +r });
+        out.push(w);
+      }
+      if (!out.length) out.push({ slug: 'index', min: false, ...nextSlot(null) });
+      return out;
+    }
+    const serialize = () => wins.map((w) => [w.slug, w.c, w.r].concat(w.min ? 'm' : []).join(':'));
+
+    function render() {
+      const d = dims();
+      const open = new Set(wins.map((w) => w.slug));
+      for (const [s, el] of els) if (!open.has(s)) { el.remove(); els.delete(s); }
+      wins.forEach((w, z) => {
+        let el = els.get(w.slug);
+        if (!el) { el = GK.windowEl(w.slug); cv.appendChild(el); els.set(w.slug, el); GK.fadeIn(el); }
+        Object.assign(el.style, {
+          left: w.c * G + 'px', top: w.r * G + 'px',
+          width: d.W + 'px', height: w.min ? '' : d.H + 'px', zIndex: z + 1,
+        });
+        el.classList.toggle('is-min', w.min);
+        el.classList.toggle('is-focus', z === wins.length - 1);
+        el.querySelector('.win-close').hidden = wins.length === 1;
+        // two-way: a link lights up while its page is open anywhere on the desk
+        el.querySelectorAll('.win-body a[data-slug]').forEach((a) => {
+          a.classList.toggle(a.closest('.backlinks') ? 'is-from' : 'is-open', open.has(a.dataset.slug));
+        });
+      });
+    }
+
+    const save = (replace) => GK.writeHash(serialize(), replace);
+    const indexOf = (slug) => wins.findIndex((w) => w.slug === slug);
+
+    function raise(slug) {
+      const i = indexOf(slug);
+      if (i < 0 || i === wins.length - 1) return;
+      wins.push(...wins.splice(i, 1));
+      render();
+    }
+
+    function open(slug, fromSlug) {
+      const i = indexOf(slug);
+      if (i >= 0) {
+        const [w] = wins.splice(i, 1);
+        w.min = false;
+        wins.push(w);
+        flash(slug);
+      } else {
+        const from = wins[indexOf(fromSlug)];
+        wins.push({ slug, min: false, ...nextSlot(from) });
+      }
+      save();
+      render();
+      reveal(wins[wins.length - 1]);
+      els.get(slug).querySelector('.win-body').focus({ preventScroll: true });
+    }
+
+    function close(slug) {
+      wins.splice(indexOf(slug), 1);
+      save();
+      render();
+    }
+
+    function flash(slug) {
+      const el = els.get(slug);
+      el.classList.add('is-flash');
+      setTimeout(() => el.classList.remove('is-flash'), 300);
+    }
+
+    // center the window vertically; horizontally, pan only if it's off screen
+    function reveal(w, instant) {
+      const d = dims();
+      const h = els.get(w.slug).offsetHeight;
+      const x = w.c * G + cam.x;
+      if (x < 16) cam.x += 16 - x;
+      else if (x + d.W > innerWidth - 16) cam.x += innerWidth - 16 - d.W - x;
+      cam.y = Math.round(innerHeight / 2 - (w.r * G + h / 2));
+      applyCam(!instant);
+    }
+
+    function arrange(mode) {
+      const d = dims(), o = origin();
+      if (mode === 'cascade') {
+        wins.forEach((w) => Object.assign(w, { c: undefined, r: undefined }));
+        wins.forEach((w, k) => Object.assign(w, nextSlot(k ? wins[k - 1] : { c: o.c - 2, r: o.r - 2 })));
+      } else {
+        // columns side by side, each stepped two cells further down: a diagonal grid
+        const cw = d.W / G + 1, cols = Math.max(1, Math.floor((innerWidth - 32) / (d.W + G)));
+        [...wins].reverse().forEach((w, k) => {
+          const col = k % cols, row = Math.floor(k / cols);
+          Object.assign(w, { c: o.c + col * cw, r: o.r + col * 2 + row * (d.H / G + 3), min: false });
+        });
+      }
+      save();
+      render();
+    }
+
+    function applyCam(animate) {
+      desk.classList.toggle('is-animating', !!animate && !GK.reduced.matches);
+      cv.style.transform = `translate(${cam.x}px, ${cam.y}px)`;
+      desk.style.backgroundPosition = `${cam.x}px ${cam.y}px`;
+    }
+
+    // --- events ---------------------------------------------------------------
+
+    bar.querySelectorAll('[data-arrange]').forEach((b) => b.addEventListener('click', () => arrange(b.dataset.arrange)));
+
+    cv.addEventListener('click', (e) => {
+      const win = e.target.closest('.win');
+      if (!win) return;
+      if (e.target.closest('.win-close')) return close(win.dataset.slug);
+      const a = e.target.closest('a[data-slug]');
+      if (a && !GK.isModified(e)) { e.preventDefault(); open(a.dataset.slug, win.dataset.slug); }
+    });
+
+    cv.addEventListener('dblclick', (e) => {
+      const win = e.target.closest('.win');
+      if (!win || !e.target.closest('.win-bar') || e.target.closest('.win-close')) return;
+      const w = wins[indexOf(win.dataset.slug)];
+      w.min = !w.min;
+      save(true);
+      render();
+    });
+
+    cv.addEventListener('mouseover', (e) => {
+      const a = e.target.closest('a[data-slug]');
+      const target = a && els.get(a.dataset.slug);
+      if (target && target !== a.closest('.win')) target.classList.add('is-target');
+    });
+    cv.addEventListener('mouseout', (e) => {
+      if (e.target.closest('a[data-slug]')) cv.querySelectorAll('.is-target').forEach((el) => el.classList.remove('is-target'));
+    });
+
+    cv.addEventListener('focusin', (e) => {
+      const win = e.target.closest('.win');
+      if (win) raise(win.dataset.slug);
+    });
+    desk.addEventListener('scroll', () => desk.scrollTo(0, 0));
+
+    // clicking anywhere on a window brings it to the front
+    desk.addEventListener('pointerdown', (e) => {
+      const win = e.target.closest('.win');
+      if (win) raise(win.dataset.slug);
+    });
+
+    desk.addEventListener('wheel', (e) => {
+      if (e.target.closest('.win-body') || e.ctrlKey) return;
+      e.preventDefault();
+      cam.x -= e.deltaX; cam.y -= e.deltaY;
+      applyCam(false);
+    }, { passive: false });
+
+    addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && wins.length > 1) close(wins[wins.length - 1].slug);
+    });
+
+    addEventListener('popstate', () => { wins = parse(); render(); });
+    addEventListener('resize', render);
+
+    wins = parse();
+    save(true);
+    render();
+    reveal(wins[wins.length - 1], true);
+  </script>
+</body>
+</html>

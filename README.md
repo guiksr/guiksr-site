@@ -2,6 +2,8 @@
 
 Personal site: blog, fotolog, filmes, coisas. Built with [Astro](https://astro.build) as plain static pages; one script (`src/scripts/trail.ts`) turns navigation into a trail of pages along a diagonal.
 
+Needs Node 22.23.4 or newer (`.nvmrc` pins it; run `nvm use`).
+
 ```sh
 npm install
 npm run dev       # http://localhost:4321

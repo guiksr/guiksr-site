@@ -1,0 +1,21 @@
+---
+import { getCollection } from 'astro:content';
+import Site from '../layouts/Site.astro';
+import Leaf from '../components/Leaf.astro';
+import { backlinksFor } from '../lib/backlinks';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('pages');
+  const backlinks = backlinksFor(entries);
+  return entries.map((entry) => ({
+    params: { slug: entry.id === 'index' ? undefined : entry.id },
+    props: { entry, backlinks: backlinks.get(entry.id) || [] },
+  }));
+}
+
+const { entry, backlinks } = Astro.props;
+---
+
+<Site title={entry.id === 'index' ? 'guiksr' : `${entry.data.title} · guiksr`} description={entry.data.description}>
+  <Leaf entry={entry} backlinks={backlinks} />
+</Site>

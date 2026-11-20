@@ -1,0 +1,60 @@
+---
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource/fragment-mono';
+import '@fontsource/fragment-mono/400-italic.css';
+import '../styles/site.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description = 'o cantinho do guiksr na internet: blog, fotolog, filmes e coisas.' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const SECTIONS = ['blog', 'fotolog', 'filmes', 'coisas', 'sobre'];
+---
+
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#120d10" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="guiksr" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <header class="sitebar top">
+      <a class="mark" href="/" data-go="index">guiksr</a>
+      <nav class="sections" aria-label="seções">
+        {SECTIONS.map((s) => <a href={`/${s}/`} data-go={s}>{s}</a>)}
+      </nav>
+    </header>
+
+    <main class="track" id="track">
+      <slot />
+    </main>
+
+    <div class="veil top"></div>
+    <div class="veil bottom"></div>
+
+    <footer class="sitebar bottom">
+      <nav class="crumbs" aria-label="rastro"></nav>
+      <button data-top hidden>voltar ao começo ↑</button>
+    </footer>
+
+    <div class="lightbox" hidden><img alt="" /><p></p></div>
+
+    <script>
+      import '../scripts/trail.ts';
+    </script>
+  </body>
+</html>

@@ -23,17 +23,16 @@
     html, body { height: auto; overflow-x: clip; }
     body { overflow-y: visible; background: none; color: var(--text); font-size: 13px; line-height: 1.65; }
 
-    .track { position: relative; padding: 30vh 0 75vh; transition: transform 0.5s var(--ease); }
+    .track { position: relative; padding: 30vh 0 75vh; will-change: transform; }
 
     .leaf {
       width: var(--col);
       margin: 0 0 42vh calc((100vw - var(--col)) / 2 + var(--i) * var(--step));
-      opacity: 0.2;
-      transition: opacity 0.4s var(--ease);
+      opacity: 0.2; /* set per frame from the scroll position */
     }
-    .leaf.is-active { opacity: 1; }
+    .leaf { position: relative; }
     .leaf:not(.is-active) { cursor: pointer; }
-    .leaf:not(.is-active):hover { opacity: 0.55; }
+    .leaf:not(.is-active):hover { opacity: 0.55 !important; }
 
     .leaf-meta { display: flex; align-items: baseline; gap: 8px; font-size: 11px; color: var(--dim); margin-bottom: 6px; }
     .leaf-meta .path { color: var(--text); }
@@ -59,24 +58,23 @@
     .ilink.is-open, .ilink.is-from { background: var(--link); color: var(--night); }
     .ilink.is-missing { color: var(--dim); }
 
-    .leaf .foto { margin: 24px 0; }
-    .leaf .fotos .foto { margin: 0; }
-    .leaf .fotos { row-gap: 14px; }
-    a.foto.is-open .foto-cap { color: var(--link); }
-    .leaf img.foto-img { background: oklch(0.22 0.01 350); }
-    .leaf .fotos { grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
-    .leaf .foto-img { border: 0; }
-    .leaf .foto-cap { color: var(--dim); font-size: 11px; }
-    a.foto:hover .foto-img, a.foto.is-open .foto-img { outline-color: var(--link); }
+    .leaf .photo { margin: 24px 0; }
+    .leaf .photos .photo { margin: 0; }
+    .leaf .photos { row-gap: 14px; }
+    a.photo.is-open .photo-cap { color: var(--link); }
+    .leaf img.photo-img { background: oklch(0.22 0.01 350); }
+    .leaf .photos { grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+    .leaf .photo-img { border: 0; }
+    .leaf .photo-cap { color: var(--dim); font-size: 11px; }
+    a.photo:hover .photo-img, a.photo.is-open .photo-img { outline-color: var(--link); }
 
     .leaf .backlinks { border-top: 0; margin-top: 20px; padding-top: 0; font-size: 12px; }
     .leaf .backlinks h2 { font: 11px/1.4 var(--mono); color: var(--dim); margin: 0 0 4px; }
     .leaf .backlinks li::before { content: '← '; }
     .bl-path { color: var(--dim); font-size: 11px; }
 
-    .trail-end { width: var(--col); font-size: 11px; color: var(--dim); }
 
-    /* site footer: fixed, quiet. mark · trail · sections · copy */
+    /* header and footer: fixed, quiet. mark + sections on top; trail + back to start below */
     .sitebar {
       position: fixed; left: 0; right: 0; z-index: 10;
       display: flex; align-items: baseline; gap: 24px;
@@ -94,31 +92,73 @@
     .crumbs button.is-active { color: var(--text); }
     .sections { display: flex; gap: 14px; }
     .sections button.is-active { color: var(--link); }
-    .sitebar [data-copy] { margin-left: auto; }
+    .sitebar [data-top] { margin-left: auto; }
 
-    /* where the trail goes from here: previous page up, next page down */
-    .ghost {
-      position: fixed; z-index: 10;
-      left: calc((100vw - var(--col)) / 2); width: var(--col);
-      border: 0; background: none; padding: 0; text-align: left;
+    /* margin lanes on both sides of the column: a gutter, then an annotation lane
+       (::left, ::right, ::facts, veio de/segue pra) */
+    :root { --gutter: 56px; --lane: 220px; }
+
+    /* where the trail goes from here, in the left lane: veio de level with the top of
+       the page, segue pra level with its end. A ::left in between is
+       respected like image and note on the right: nothing overlaps, things push down. */
+    .trail-nav {
+      position: absolute; right: calc(100% + var(--gutter)); width: var(--lane);
+      border: 0; background: none; padding: 0; text-align: right;
       font: 11px/1.4 var(--mono); color: var(--dim); cursor: pointer;
-      transition: opacity 0.3s var(--ease);
     }
-    .ghost b { display: block; font: 700 17px/1.2 var(--display); color: var(--text); opacity: 0.35; transition: opacity 0.2s; }
-    .ghost:hover b { opacity: 0.8; }
-    .ghost.prev { top: 64px; }
-    .ghost.next { bottom: 52px; }
-    .ghost:empty { opacity: 0; pointer-events: none; }
+    .trail-nav.prev { top: 0; }
+    .trail-nav.next { bottom: 0; }
+    .trail-nav b { display: block; font: 700 17px/1.2 var(--display); color: var(--text); opacity: 0.4; transition: opacity 0.2s; }
+    .trail-nav:hover b { opacity: 0.85; }
+    .trail-nav[hidden] { display: none; }
+
+    /* beside the text: ::right and ::facts sit in the right lane, ::left in the left
+       one, at the height where they appear in the markdown */
+    .leaf .side { position: absolute; left: calc(100% + var(--gutter)); width: var(--lane); margin: 4px 0 0; color: var(--dim); font-size: 11px; }
+    .leaf .side.left { left: auto; right: calc(100% + var(--gutter)); text-align: right; }
+    .leaf .side p { margin: 0 0 8px; }
+    .leaf .side .photo { margin: 0 0 6px; }
+    .leaf .facts dl { gap: 3px 14px; }
+    .leaf .facts dt { color: var(--dim); }
+    .leaf .facts dd { color: var(--text); }
+
+
+    /* photos open full screen; linked photos (fotolog grid) navigate instead */
+    .leaf figure.photo img { cursor: zoom-in; }
+    .lightbox {
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      background: oklch(0.12 0.008 350 / 0.94); cursor: zoom-out;
+    }
+    .lightbox[hidden] { display: none; }
+    .lightbox img { display: block; transform-origin: 0 0; background: oklch(0.22 0.01 350); }
+    .lightbox p { margin: 0; font-size: 11px; color: var(--dim); min-height: 1lh; }
+
+    @media (max-width: 1000px) {
+      .trail-nav { position: static; display: block; width: auto; text-align: left; }
+      .trail-nav.prev { margin: 0 0 18px; }
+      .trail-nav.next { margin: 28px 0 0; }
+      .leaf .side, .leaf .side.left { position: static; width: auto; text-align: left; margin: 0 0 16px; }
+    }
 
     @media (max-width: 720px) {
       .crumbs { display: none; }
       .sitebar { gap: 14px; padding-inline: 16px; }
       .sections { gap: 10px; }
-      .ghost { left: 24px; }
     }
 
-    /* no slide/fade on first paint */
-    .track:not(.is-ready), .track:not(.is-ready) .leaf { transition: none; }
+    .sitebar button { transition: color 0.3s var(--ease); }
+
+    /* a page arriving: its blocks surface one by one */
+    @keyframes surface { from { opacity: 0; transform: translateY(12px); } }
+    .leaf.is-entering > * { animation: surface 0.9s var(--ease) both; animation-delay: calc(180ms + var(--k) * 55ms); }
+    /* a page leaving: everything dissolves upward together */
+    @keyframes dissolve { to { opacity: 0; transform: translateY(-8px); } }
+    .leaf.is-leaving > * { animation: dissolve 0.32s cubic-bezier(0.4, 0, 1, 1) both; }
+
+    /* photos fade in as they load instead of popping */
+    .leaf img.photo-img { opacity: 0; transition: opacity 0.9s var(--ease); }
+    .leaf img.photo-img.is-loaded { opacity: 1; }
 
     .veil { position: fixed; left: 0; right: 0; height: 16vh; pointer-events: none; z-index: 5; }
     .veil.top { top: 0; background: linear-gradient(var(--night) 35%, transparent); }
@@ -127,6 +167,7 @@
 </head>
 <body>
   <main class="track" id="track"></main>
+  <div class="lightbox" hidden><img alt=""><p></p></div>
   <div class="veil top"></div>
   <div class="veil bottom"></div>
   <header class="sitebar top">
@@ -139,11 +180,9 @@
       <button data-go="sobre">sobre</button>
     </nav>
   </header>
-  <button class="ghost prev" data-ghost="-1"></button>
-  <button class="ghost next" data-ghost="1"></button>
   <footer class="sitebar bottom">
     <nav class="crumbs" aria-label="rastro"></nav>
-    <button data-copy>copiar link</button>
+    <button data-top hidden>voltar ao começo ↑</button>
   </footer>
 
   <script src="shared/content.js"></script>
@@ -155,12 +194,9 @@
     const track = document.getElementById('track');
     const P = GK.P;
     const crumbs = document.querySelector('.crumbs');
-    const ghosts = document.querySelectorAll('.ghost');
+    const toTop = document.querySelector('[data-top]');
 
     let stack = [], leaves = [], focus = 0;
-    const end = document.createElement('footer');
-    end.className = 'trail-end';
-    end.innerHTML = 'fim do rastro · <a href="#" data-top>voltar ao começo ↑</a>';
 
     function leafEl(slug) {
       const page = P[slug] || {
@@ -178,10 +214,12 @@
           <span>${page.kind}${page.date ? ' · ' + page.date : ''}</span>
           <button class="leaf-close" aria-label="fechar daqui pra frente">×</button>
         </div>
+        <button class="trail-nav prev" hidden></button>
         <h1>${GK.esc(page.title)}</h1>
         ${GK.md(page.body)}
         ${bl.length ? `<footer class="backlinks"><h2>linkado por</h2><ul>${bl.map((s) =>
-          `<li><a class="ilink" href="#${s}" data-slug="${s}">${GK.esc(P[s].title)}</a> <span class="bl-path">/${GK.pathOf(s)}</span></li>`).join('')}</ul></footer>` : ''}`;
+          `<li><a class="ilink" href="#${s}" data-slug="${s}">${GK.esc(P[s].title)}</a> <span class="bl-path">/${GK.pathOf(s)}</span></li>`).join('')}</ul></footer>` : ''}
+        <button class="trail-nav next" hidden></button>`;
       return el;
     }
 
@@ -192,6 +230,10 @@
         if (leaves[i]) leaves[i].remove();
         leaves[i] = leafEl(slug);
         track.insertBefore(leaves[i], leaves[i + 1] || null);
+        leaves[i].querySelectorAll('img').forEach((img) => {
+          const done = () => img.classList.add('is-loaded');
+          if (img.complete) done(); else { img.addEventListener('load', done); img.addEventListener('error', done); }
+        });
       });
       leaves.forEach((el, i) => {
         el.dataset.i = i;
@@ -203,60 +245,177 @@
           a.classList.toggle('is-from', inBL && a.dataset.slug === stack[i - 1]);
         });
       });
-      track.appendChild(end);
-      end.style.marginLeft = `calc((100vw - var(--col)) / 2 + ${stack.length - 1} * var(--step))`;
-      frame();
+      leaves.forEach((el, i) => {
+        // each page names its neighbours on the trail
+        for (const [cls, j, label] of [['prev', i - 1, '↑ veio de'], ['next', i + 1, '↓ segue pra']]) {
+          const b = el.querySelector(`.trail-nav.${cls}`), slug = stack[j];
+          b.hidden = !slug;
+          b.dataset.goto = j;
+          if (slug) b.innerHTML = `${label}<b>${GK.esc(P[slug]?.title || slug)}</b>`;
+        }
+      });
+      focus = -1; // force the bar to repaint
+      shown.length = 0;
+      measure();
     }
 
-    // The active page is the last one whose top has crossed the reading line (40%
-    // down). The track slides so the active column is centered; the rest fade.
-    function frame() {
-      const line = scrollY + innerHeight * 0.4;
-      let active = 0;
-      leaves.forEach((el, i) => { if (el.offsetTop <= line) active = i; });
-      leaves.forEach((el, i) => el.classList.toggle('is-active', i === active));
-      if (leaves.length) track.style.transform = `translateX(${leaves[0].offsetLeft - leaves[active].offsetLeft}px)`;
-      focus = active;
-      paintBar();
+    // --- motion -------------------------------------------------------------------
+    // Native scroll drives everything; nothing is animated on its own. f is your
+    // position along the trail: a whole number while you read a page, fractional
+    // while you cross the gap to the next one. The track slides and the pages
+    // crossfade from f, so scrolling through a gap *is* the diagonal move.
+    // Layout is measured once (and on resize/load), never during scroll.
+    const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const CROSS = 0.34; // the crossing takes the last 34vh of scroll before a page's rest point
+
+    // Three columns: the main column sets the page's height; the side columns live
+    // inside it. Each side item wants to sit at the height where it appears in the
+    // text. veio de is pinned to the top, segue pra to the end of the main content
+    // (linkado por, if there is one). Items never overlap (16px apart) and never run
+    // past the end: going down the lane they're pushed below the one above, then going
+    // up from the end they're pulled back inside. Only a lane that can't fit at all
+    // overflows downward. Lanes fold into the text on narrow screens; nothing moves.
+    const LANES = [
+      '.trail-nav.prev:not([hidden]), .side.left, .trail-nav.next:not([hidden])',
+      '.side.right',
+    ];
+    const GAP = 16;
+
+    function settleLanes(leaf) {
+      const H = leaf.offsetHeight;
+      for (const sel of LANES) {
+        const items = [...leaf.querySelectorAll(sel)].filter((el) => {
+          if (getComputedStyle(el).position === 'absolute') return true;
+          el.style.translate = '';
+          return false;
+        }).map((el) => ({
+          el, top: el.offsetTop, h: el.offsetHeight,
+          pin: el.classList.contains('prev') ? 'top' : el.classList.contains('next') ? 'end' : null,
+        }));
+        // down: no overlaps
+        let floor = 0;
+        for (const it of items) {
+          it.y = Math.max(it.pin === 'end' ? H - it.h : it.top, floor);
+          floor = it.y + it.h + GAP;
+        }
+        const pushed = items.map((it) => it.y);
+        // up from the end: pull back inside the page
+        let limit = H;
+        for (let k = items.length - 1; k >= 0 && items[k].pin !== 'top'; k--) {
+          items[k].y = Math.min(items[k].y, limit - items[k].h);
+          limit = items[k].y - GAP;
+        }
+        // the lane is taller than the page: keep the pushed-down layout instead
+        const fits = items.every((it, k) => it.y >= 0 && (k === 0 || it.y >= items[k - 1].y + items[k - 1].h + GAP));
+        items.forEach((it, k) => {
+          const dy = (fits ? it.y : pushed[k]) - it.top;
+          it.el.style.translate = dy ? `0 ${dy}px` : '';
+        });
+      }
+    }
+
+    let m = []; // per page: { anchor (scrollY where it rests), x (column offset) }
+    function measure() {
+      const vh = innerHeight;
+      leaves.forEach(settleLanes);
+      m = leaves.map((el) => {
+        const h = el.offsetHeight;
+        return { anchor: el.offsetTop - Math.max(80, Math.min((vh - h) / 2, vh * 0.38)), x: el.offsetLeft };
+      });
+      // end the document exactly where the last page rests: no empty scroll after it
+      const pad = parseFloat(track.style.paddingBottom) || 0;
+      const content = track.offsetHeight - pad;
+      if (m.length) track.style.paddingBottom = `${Math.max(24, Math.ceil(m[m.length - 1].anchor + vh - content))}px`;
+      kick();
+    }
+    new ResizeObserver(measure).observe(track);
+
+    function trailPos() {
+      const y = scrollY;
+      let i = 0;
+      while (m[i + 1] && y >= m[i + 1].anchor) i++;
+      if (!m[i + 1]) return i;
+      const next = m[i + 1].anchor, start = next - innerHeight * CROSS;
+      return y <= start ? i : i + easeInOut((y - start) / (next - start));
+    }
+
+    let raf = 0;
+    const kick = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (m.length) paint(trailPos()); }); };
+
+    const shown = []; // last opacity written per page, to skip no-op writes
+    function paint(f) {
+      const i = Math.min(Math.floor(f), m.length - 1), t = f - i;
+      const x = m[i].x + ((m[i + 1] ? m[i + 1].x : m[i].x) - m[i].x) * t;
+      track.style.transform = `translate3d(${(m[0].x - x).toFixed(1)}px, 0, 0)`;
+      leaves.forEach((el, j) => {
+        const o = (0.2 + 0.8 * Math.max(0, 1 - Math.abs(f - j))).toFixed(2);
+        if (shown[j] !== o) { el.style.opacity = o; shown[j] = o; }
+      });
+      const active = Math.round(f);
+      if (active !== focus) {
+        focus = active;
+        leaves.forEach((el, j) => el.classList.toggle('is-active', j === active));
+        paintBar();
+      }
     }
 
     function paintBar() {
       crumbs.innerHTML = stack.map((slug, i) =>
         `${i ? '<span>→</span>' : ''}<button data-crumb="${i}" class="${i === focus ? 'is-active' : ''}">${GK.esc(P[slug]?.title || slug)}</button>`).join('');
       document.querySelectorAll('[data-go]').forEach((b) => b.classList.toggle('is-active', stack[focus] === b.dataset.go));
-      ghosts.forEach((g) => {
-        const slug = stack[focus + +g.dataset.ghost];
-        const label = g.dataset.ghost < 0 ? '↑ veio de' : '↓ segue pra';
-        g.innerHTML = slug ? `${label}<b>${GK.esc(P[slug]?.title || slug)}</b>` : '';
-      });
+      toTop.hidden = focus <= 0;
       const page = P[stack[focus]];
       document.title = page && stack[focus] !== 'index' ? `${page.title} · guiksr` : 'guiksr';
     }
 
-    // Center the page vertically. Tall pages start near the top instead; short ones
-    // never sit below the reading line, so they still become active.
+    // clicks use the browser's own smooth scroll
     function scrollToLeaf(i, instant) {
-      const el = leaves[i];
-      if (!el) return;
-      const vh = innerHeight;
-      const top = Math.max(80, Math.min((vh - el.offsetHeight) / 2, vh * 0.38));
-      scrollTo({ top: el.offsetTop - top, behavior: instant || GK.reduced.matches ? 'auto' : 'smooth' });
+      if (!leaves[i]) return;
+      if (!m[i]) measure();
+      scrollTo({ top: m[i].anchor, behavior: instant || GK.reduced.matches ? 'auto' : 'smooth' });
     }
 
+    function enter(el) {
+      if (GK.reduced.matches) return;
+      [...el.children].forEach((c, k) => c.style.setProperty('--k', k));
+      el.classList.add('is-entering');
+      setTimeout(() => el.classList.remove('is-entering'), 1800);
+    }
+
+    // pages being cut from the trail dissolve before they go
+    function leave(from, then) {
+      const going = leaves.slice(from);
+      if (!going.length || GK.reduced.matches) return then();
+      going.forEach((el) => el.classList.add('is-leaving'));
+      setTimeout(then, 320);
+    }
+
+    let busy = false;
     function open(i, slug) {
+      if (busy) return;
       if (stack[i - 1] === slug) return scrollToLeaf(i - 1);
       if (stack[i + 1] === slug) return scrollToLeaf(i + 1);
-      stack = stack.slice(0, i + 1).concat(slug);
-      GK.writeHash(stack);
-      render();
-      scrollToLeaf(stack.length - 1);
+      busy = true;
+      leave(i + 1, () => {
+        stack = stack.slice(0, i + 1).concat(slug);
+        GK.writeHash(stack);
+        render();
+        enter(leaves[leaves.length - 1]);
+        scrollToLeaf(stack.length - 1);
+        busy = false;
+      });
     }
 
     function close(i) {
-      stack = stack.slice(0, Math.max(1, i));
-      GK.writeHash(stack);
-      render();
-      scrollToLeaf(stack.length - 1);
+      if (busy) return;
+      busy = true;
+      leave(Math.max(1, i), () => {
+        stack = stack.slice(0, Math.max(1, i));
+        GK.writeHash(stack);
+        render();
+        scrollToLeaf(stack.length - 1);
+        busy = false;
+      });
     }
 
     function load() {
@@ -268,7 +427,10 @@
     // --- events ---------------------------------------------------------------
 
     track.addEventListener('click', (e) => {
-      if (e.target.closest('[data-top]')) { e.preventDefault(); return scrollToLeaf(0); }
+      const pic = e.target.closest('figure.photo img');
+      if (pic) return openImage(pic);
+      const nav = e.target.closest('.trail-nav');
+      if (nav) return scrollToLeaf(+nav.dataset.goto);
       const leaf = e.target.closest('.leaf');
       if (!leaf) return;
       const i = +leaf.dataset.i;
@@ -278,47 +440,86 @@
       if (!leaf.classList.contains('is-active') && !getSelection().toString()) scrollToLeaf(i);
     });
 
-    // footer: a section already on the trail gets focused; otherwise it opens after
-    // the page you're reading, same as clicking a link in it
-    document.addEventListener('click', async (e) => {
+    // header/footer: a section already on the trail gets focused; otherwise it opens
+    // after the page you're reading, same as clicking a link in it
+    document.addEventListener('click', (e) => {
       if (e.target.closest('.track')) return;
-      const ghost = e.target.closest('[data-ghost]');
-      if (ghost) return scrollToLeaf(focus + +ghost.dataset.ghost);
+      if (e.target.closest('[data-top]')) return scrollToLeaf(0);
       const go = e.target.closest('[data-go]'), crumb = e.target.closest('[data-crumb]');
       if (go) {
         const i = stack.indexOf(go.dataset.go);
         return i >= 0 ? scrollToLeaf(i) : open(focus, go.dataset.go);
       }
       if (crumb) return scrollToLeaf(+crumb.dataset.crumb);
-      const copy = e.target.closest('[data-copy]');
-      if (copy) {
-        try { await navigator.clipboard.writeText(location.href); copy.textContent = 'copiado'; }
-        catch { prompt('copia esse link:', location.href); }
-        setTimeout(() => (copy.textContent = 'copiar link'), 1200);
-      }
     });
 
-    let ticking = false;
-    addEventListener('scroll', () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => { frame(); ticking = false; });
-    }, { passive: true });
-    addEventListener('resize', frame);
+    addEventListener('scroll', kick, { passive: true });
+    addEventListener('resize', measure);
+
+    // --- lightbox ---------------------------------------------------------------
+    // The photo grows out of its spot in the text (FLIP on one element), then swaps
+    // to a sharper copy sized for the screen. Click, Esc or scrolling closes it.
+    const lb = document.querySelector('.lightbox'), lbImg = lb.querySelector('img'), lbCap = lb.querySelector('p');
+    const EASE = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
+    let lbFrom = null;
+
+    // gatinho URLs are /<w>/<h>[/<id>]: ask for the size we'll actually show
+    function sharper(src, w, h) {
+      const m = src.match(/^(https?:\/\/[^/]+)\/(\d+)\/(\d+)(\/\d+)?$/);
+      if (!m) return src;
+      const k = Math.min(2400 / Math.max(+m[2], +m[3]), (w * devicePixelRatio) / +m[2]);
+      return k > 1 ? `${m[1]}/${Math.round(m[2] * k)}/${Math.round(m[3] * k)}${m[4] || ''}` : src;
+    }
+
+    function openImage(img) {
+      const nw = img.naturalWidth || img.width, nh = img.naturalHeight || img.height;
+      const s = Math.min((innerWidth * 0.9) / nw, (innerHeight * 0.82) / nh);
+      const w = Math.round(nw * s), h = Math.round(nh * s);
+      lbFrom = img;
+      lbImg.src = img.currentSrc || img.src;
+      Object.assign(lbImg.style, { width: w + 'px', height: h + 'px' });
+      lbCap.textContent = img.alt;
+      lb.hidden = false;
+      const big = new Image();
+      big.onload = () => { if (lbFrom === img) lbImg.src = big.src; };
+      big.src = sharper(img.src, w, h);
+      if (GK.reduced.matches) return;
+      const from = img.getBoundingClientRect(), to = lbImg.getBoundingClientRect();
+      lbImg.animate([{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})` }, { transform: 'none' }],
+        { duration: 420, easing: EASE });
+      lb.animate([{ backgroundColor: 'transparent' }, {}], { duration: 420, easing: EASE });
+      lbCap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 200, fill: 'backwards' });
+    }
+
+    function closeImage(fly = true) {
+      if (lb.hidden) return;
+      const img = lbFrom;
+      lbFrom = null;
+      const done = () => { lb.hidden = true; lbImg.removeAttribute('src'); };
+      if (GK.reduced.matches) return done();
+      const from = img.getBoundingClientRect(), to = lbImg.getBoundingClientRect();
+      const onScreen = fly && from.bottom > 0 && from.top < innerHeight;
+      lb.animate([{}, { backgroundColor: 'transparent' }], { duration: 300, easing: EASE, fill: 'forwards' }).onfinish = (a) => { done(); a.target.cancel(); };
+      lbCap.animate([{}, { opacity: 0 }], { duration: 150, fill: 'forwards' }).onfinish = (a) => a.target.cancel();
+      lbImg.animate(onScreen
+        ? [{}, { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})` }]
+        : [{}, { opacity: 0 }], { duration: 300, easing: EASE, fill: 'forwards' }).onfinish = (a) => a.target.cancel();
+    }
+
+    lb.addEventListener('click', () => closeImage());
+    addEventListener('scroll', () => closeImage(false), { passive: true });
 
     addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && stack.length > 1) close(stack.length - 1);
+      if (e.key !== 'Escape') return;
+      if (!lb.hidden) return closeImage();
+      if (stack.length > 1) close(stack.length - 1);
     });
     addEventListener('popstate', () => { load(); scrollToLeaf(stack.length - 1, true); });
 
     history.scrollRestoration = 'manual';
     load();
     scrollToLeaf(stack.length - 1, true);
-    document.fonts.ready.then(() => {
-      scrollToLeaf(stack.length - 1, true);
-      frame();
-      requestAnimationFrame(() => track.classList.add('is-ready'));
-    });
+    document.fonts.ready.then(() => { measure(); scrollToLeaf(stack.length - 1, true); });
   </script>
 </body>
 </html>

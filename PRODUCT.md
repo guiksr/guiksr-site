@@ -36,7 +36,7 @@ Playful, curious, authentic. The energy of someone who makes things because they
 
 - **Nuxt + Nuxt Content + MDC.** Every page is a markdown file in `content/`; editing the site means editing `.md` files. No CMS, no database to babysit.
 - Frontmatter carries `title`, `date` and `kind` (`post`, `foto`, `filme`, `página`, `índice`). Folders map to sections: `content/blog/`, `content/fotolog/`, `content/filmes/`.
-- MDC block components (`::fotos`, etc., in `components/content/`) cover the few things plain markdown can't, like a photo grid.
+- MDC block components in `components/content/` (English names: `::photos`, `::right`, `::facts`) cover the few things plain markdown can't, like a photo grid or a note beside the text.
 - **Two-way links.** Internal links are plain markdown links (`[blog](/blog)`). Backlinks ("linkado por") are derived at build time by extracting links from every file, so pages never need to list who points at them.
 - **Window navigation, not page loads.** Internal links open a new window on a diagonal grid instead of replacing the page (see DESIGN.md §7). The URL holds every open window, so a copied link restores the whole arrangement.
 - **Every window is a real route.** `/blog/janelas` server-renders as a normal page; the window desk is progressive enhancement on top.

@@ -1,10 +1,15 @@
 // Fake content, shaped like Nuxt Content files: content/<slug>.md with frontmatter.
-// `::fotos ... ::` stands in for an MDC block component (components/content/Fotos.vue).
+// `::photos`, `::left`, `::right` and `::facts` stand in for MDC block components
+// (components/content/Photos.vue, Left.vue, Right.vue, Facts.vue).
 window.PAGES = {
   'index': {
     title: 'olá, sou o guiksr',
     kind: 'home',
     body: `
+::right
+![](https://gatinho.guiksr.com/480/600/22)
+::
+
 sou designer e programador. atualmente trabalho na [2na8](https://2na8.com).
 
 isso aqui é meu cantinho na internet: um [blog](/blog), um [fotolog](/fotolog), um diário de [filmes](/filmes) e uma pilha de [coisas](/coisas) que me chamaram atenção.
@@ -36,7 +41,9 @@ textos curtos, longos, inacabados.
     body: `
 a ideia: navegar pelo site sem sair do lugar. cada link abre uma janela ao lado, numa grade em diagonal, e as janelas antigas ficam ali, visíveis, tipo um rastro.
 
-![a mesa, com supervisão](https://gatinho.guiksr.com/720/480/3)
+::right
+![a mesa, com supervisão](https://gatinho.guiksr.com/480/600/3)
+::
 
 é parecido com as notas empilhadas do obsidian e de alguns jardins digitais, mas eu queria algo mais de **janela** e mais de **grade**. menos papel, mais mesa.
 
@@ -45,6 +52,10 @@ a ideia: navegar pelo site sem sair do lugar. cada link abre uma janela ao lado,
 toda página sabe quem aponta pra ela. lá embaixo tem o "linkado por". se você veio do [blog](/blog), o link de volta fica marcado.
 
 ## o link é o estado
+
+::right
+nota: no nuxt, isso vira \`/blog/janelas?w=index,blog\`. cada página continua sendo uma rota de verdade.
+::
 
 a url guarda todas as janelas abertas. copiou, colou, abriu igualzinho.
 
@@ -63,7 +74,9 @@ o site antigo era uma página rosa com meu nome e dois links. funcionou por anos
 
 o novo é feito com nuxt + nuxt content. cada página é um arquivo \`.md\`. pra postar, eu crio um arquivo e pronto. com mdc dá pra usar uns componentes no meio do texto, tipo a grade de fotos do [fotolog](/fotolog).
 
-![](https://gatinho.guiksr.com/720/400/18)
+::left
+![a obra, vista de baixo](https://gatinho.guiksr.com/480/600/18)
+::
 
 coisas que eu quero:
 
@@ -92,7 +105,7 @@ quem vê o ônibus passar todo dia também é o rico, [da janela](/fotolog/janel
     body: `
 fotos de celular, sem filtro de qualidade. quase todas do rico.
 
-::fotos
+::photos
 ![domingo de sol](https://gatinho.guiksr.com/400/400/5 /fotolog/domingo)
 ![na janela](https://gatinho.guiksr.com/400/400/12 /fotolog/janela)
 ![soneca](https://gatinho.guiksr.com/400/400/22)
@@ -145,7 +158,8 @@ diário de filmes. nota de 0 a 5, sem pensar muito.
     kind: 'filme',
     date: 'visto em 03 set 2026',
     body: `
-**perfect days** (2023), wim wenders. ★★★★½
+::facts{ano="2023" direção="wim wenders" nota="★★★★½" visto="03 set 2026" onde="cinema"}
+::
 
 texto de exemplo. um cara que limpa banheiros em tóquio e é feliz com a rotina. saí querendo tirar mais [fotos](/fotolog) de árvore.
 
@@ -158,7 +172,8 @@ parecido com [past lives](/filmes/past-lives), pelo silêncio.
     kind: 'filme',
     date: 'visto em 21 jul 2026',
     body: `
-**past lives** (2023), celine song. ★★★★
+::facts{ano="2023" direção="celine song" nota="★★★★" visto="21 jul 2026" onde="em casa"}
+::
 
 texto de exemplo. o filme inteiro cabe numa conversa de bar.
 
@@ -185,7 +200,9 @@ links e coisas que me chamaram atenção. sem ordem.
     body: `
 oi. sou o guiksr, designer e programador. trabalho na [2na8](https://2na8.com).
 
-![o rico, gerente do site](https://gatinho.guiksr.com/720/540/42)
+::right
+![o rico, gerente do site](https://gatinho.guiksr.com/480/480/42)
+::
 
 esse site é feito à mão, em português, sem pressa. começa pela [home](/) ou pelo [blog](/blog).
 

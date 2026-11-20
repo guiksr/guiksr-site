@@ -14,7 +14,7 @@
   const slugOf = (href) => href.replace(/^\/+|\/+$/g, '') || 'index';
   const pathOf = (slug) => (slug === 'index' ? '' : slug);
   // ![legenda](src /optional-link) — src is an image URL or a #hex placeholder color
-  const FOTO = /^!\[(.*?)\]\((#[0-9a-fA-F]{3,8}|https?:\/\/\S+?)(?: (\/\S*))?\)$/;
+  const PHOTO = /^!\[(.*?)\]\((#[0-9a-fA-F]{3,8}|https?:\/\/\S+?)(?: (\/\S*))?\)$/;
 
   // --- markdown (just enough for the fake content) ---------------------------
 
@@ -38,21 +38,36 @@
     return m ? ` width="${m[1]}" height="${m[2]}"` : '';
   }
 
-  function foto(line) {
-    const m = line.match(FOTO);
+  function photo(line) {
+    const m = line.match(PHOTO);
     if (!m) return '';
     const [, alt, src, href] = m;
     const pic = src.startsWith('#')
-      ? `<span class="foto-img" style="--c:${src}" role="img" aria-label="${esc(alt)}"></span>`
-      : `<img class="foto-img" src="${esc(src)}" alt="${esc(alt)}" loading="lazy"${sizeAttrs(src)}>`;
-    const img = `${pic}${alt ? `<span class="foto-cap">${esc(alt)}</span>` : ''}`;
-    if (!href) return `<figure class="foto">${img}</figure>`;
+      ? `<span class="photo-img" style="--c:${src}" role="img" aria-label="${esc(alt)}"></span>`
+      : `<img class="photo-img" src="${esc(src)}" alt="${esc(alt)}" loading="lazy"${sizeAttrs(src)}>`;
+    const img = `${pic}${alt ? `<span class="photo-cap">${esc(alt)}</span>` : ''}`;
+    if (!href) return `<figure class="photo">${img}</figure>`;
     const slug = slugOf(href);
-    return `<a class="foto" href="#${slug}" data-slug="${slug}">${img}</a>`;
+    return `<a class="photo" href="#${slug}" data-slug="${slug}">${img}</a>`;
   }
 
+  // MDC-style block components: `::name{key="value"}` … `::`. In Nuxt these would be
+  // components/content/<Name>.vue; here each is a function of (props, inner lines).
+  const COMPONENTS = {
+    photos: (props, lines) => `<div class="photos">${lines.filter(Boolean).map(photo).join('')}</div>`,
+    // left / right: anything that should live beside the text instead of inside it
+    left: (props, lines) => `<aside class="side left">${md(lines.join('\n'))}</aside>`,
+    right: (props, lines) => `<aside class="side right">${md(lines.join('\n'))}</aside>`,
+    // facts: a small fact sheet (film, book, place…), in the right margin.
+    // The keys are the labels readers see, so they're written in the page's language.
+    facts: (props) => `<aside class="side right facts"><dl>${Object.entries(props).map(([k, v]) =>
+      `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></aside>`,
+  };
+  // key="value" pairs, plus bare words as boolean props: {flag}
+  const props = (s = '') => Object.fromEntries([...s.matchAll(/([^\s="]+)(?:="([^"]*)")?/g)].map((m) => [m[1], m[2] ?? true]));
+
   function md(src) {
-    let html = '', para = [], list = null, fotos = null;
+    let html = '', para = [], list = null, block = null;
     const flushP = () => { if (para.length) { html += `<p>${inline(para.join(' '))}</p>`; para = []; } };
     const flushL = () => { if (list) { html += `<ul>${list.map((li) => `<li>${inline(li)}</li>`).join('')}</ul>`; list = null; } };
     const flush = () => { flushP(); flushL(); };
@@ -60,16 +75,16 @@
     for (const raw of src.trim().split('\n')) {
       const line = raw.trim();
       let m;
-      if (fotos) {
-        if (line === '::') { html += `<div class="fotos">${fotos.join('')}</div>`; fotos = null; }
-        else if (line) fotos.push(foto(line));
+      if (block) {
+        if (line === '::') { html += (COMPONENTS[block.name] || (() => ''))(block.props, block.lines); block = null; }
+        else block.lines.push(line);
         continue;
       }
       if (!line) { flush(); continue; }
-      if (line.startsWith('::fotos')) { flush(); fotos = []; continue; }
+      if ((m = line.match(/^::([\w-]+)(?:\{(.*)\})?$/))) { flush(); block = { name: m[1], props: props(m[2]), lines: [] }; continue; }
       if ((m = line.match(/^(#{2,3}) (.*)/))) { flush(); html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`; continue; }
       if ((m = line.match(/^> (.*)/))) { flush(); html += `<blockquote>${inline(m[1])}</blockquote>`; continue; }
-      if (FOTO.test(line)) { flush(); html += foto(line); continue; }
+      if (PHOTO.test(line)) { flush(); html += photo(line); continue; }
       if ((m = line.match(/^- (.*)/))) { flushP(); (list ||= []).push(m[1]); continue; }
       flushL(); para.push(line);
     }

@@ -1,10 +1,5 @@
-// The trail. Every page is a real static page; this script strings them along a
-// diagonal. An internal link opens its page beside the one you're reading instead of
-// navigating away, and the address keeps the whole trail:
-//
-//   /blog/janelas/?w=index,blog   →   index → blog → janelas infinitas
-//
-// Native scroll drives all the motion. Without this script the site is just pages.
+// Strings the static pages along a diagonal trail. Internal links open beside the
+// current page and the URL keeps the trail: /blog/site-novo/?w=index,blog.
 
 const track = document.getElementById('track') as HTMLElement;
 const firstLeaf = track.querySelector<HTMLElement>('.leaf[data-slug]');
@@ -20,11 +15,12 @@ function trail(firstLeaf: HTMLElement) {
   const pathOf = (slug: string) => (slug === 'index' ? '/' : `/${slug}/`);
   const titleOf = (el?: HTMLElement) => el?.dataset.title || el?.dataset.slug || '';
 
-  let stack: string[] = [slugOf(location.pathname)];
-  let leaves: HTMLElement[] = [firstLeaf];
+  let stack = [slugOf(location.pathname)];
+  let leaves = [firstLeaf];
   let focus = -1;
+  let busy = false;
 
-  // --- the address -------------------------------------------------------------
+  // --- address
 
   function readUrl() {
     const w = new URLSearchParams(location.search).get('w');
@@ -33,16 +29,18 @@ function trail(firstLeaf: HTMLElement) {
 
   function writeUrl() {
     const before = stack.slice(0, -1);
-    const url = pathOf(stack[stack.length - 1]) + (before.length ? `?w=${before.join(',')}` : '');
+    const url = pathOf(stack.at(-1)!) + (before.length ? `?w=${before.join(',')}` : '');
     if (location.pathname + location.search !== url) history.pushState(null, '', url);
   }
 
-  // --- pages ---------------------------------------------------------------------
-  // Pages are fetched as HTML and their <article class="leaf"> lifted out. Fetches are
-  // cached and start on hover, so most pages are already here by the time you click.
+  // --- pages
 
   const cache = new Map<string, Promise<HTMLElement>>();
   cache.set(firstLeaf.dataset.slug!, Promise.resolve(firstLeaf.cloneNode(true) as HTMLElement));
+
+  const absent = new Set(
+    [...document.querySelectorAll<HTMLElement>('a.is-missing[data-slug]')].map((a) => a.dataset.slug!),
+  );
 
   function missing(slug: string) {
     const el = document.createElement('article');
@@ -50,8 +48,10 @@ function trail(firstLeaf: HTMLElement) {
     el.dataset.slug = slug;
     el.dataset.title = 'ainda não existe';
     el.innerHTML = `
-      <div class="leaf-meta"><span class="path">/${esc(slug)}</span><span>vazio</span>
-        <button class="leaf-close" aria-label="fechar daqui pra frente" hidden>×</button></div>
+      <div class="leaf-meta">
+        <span class="path">/${esc(slug)}</span><span>vazio</span>
+        <button class="leaf-close" aria-label="fechar daqui pra frente" hidden>×</button>
+      </div>
       <button class="trail-nav prev" hidden></button>
       <h1>ainda não existe</h1>
       <p>a página <code>/${esc(slug)}</code> ainda não foi escrita.</p>
@@ -59,39 +59,44 @@ function trail(firstLeaf: HTMLElement) {
     return el;
   }
 
-  // pages known not to exist yet (their links are marked at build time) aren't fetched
-  const absent = new Set([...document.querySelectorAll<HTMLElement>('a.is-missing[data-slug]')].map((a) => a.dataset.slug!));
-
   function prefetch(slug: string) {
-    if (absent.has(slug) && !cache.has(slug)) cache.set(slug, Promise.resolve(missing(slug)));
     if (!cache.has(slug)) {
-      cache.set(slug, fetch(pathOf(slug))
-        .then((r) => (r.ok ? r.text() : Promise.reject()))
-        .then((html) => new DOMParser().parseFromString(html, 'text/html').querySelector<HTMLElement>('.leaf[data-slug]') || Promise.reject())
-        .catch(() => missing(slug)));
+      cache.set(
+        slug,
+        absent.has(slug)
+          ? Promise.resolve(missing(slug))
+          : fetch(pathOf(slug))
+              .then((r) => (r.ok ? r.text() : Promise.reject()))
+              .then((html) => {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                return doc.querySelector<HTMLElement>('.leaf[data-slug]') ?? Promise.reject();
+              })
+              .catch(() => missing(slug)),
+      );
     }
     return cache.get(slug)!;
   }
 
-  const leafFor = async (slug: string) => document.importNode(await prefetch(slug), true) as HTMLElement;
+  const leafFor = async (slug: string) => document.importNode(await prefetch(slug), true);
 
-  // Make the DOM match a new trail, reusing pages that are already on it.
   async function build(next: string[]) {
     const pool = [...leaves];
-    const els = await Promise.all(next.map((slug) => {
-      const k = pool.findIndex((el) => el.dataset.slug === slug);
-      return k >= 0 ? pool.splice(k, 1)[0] : leafFor(slug);
-    }));
-    leaves.forEach((el) => { if (!els.includes(el)) el.remove(); });
+    const els = await Promise.all(
+      next.map((slug) => {
+        const k = pool.findIndex((el) => el.dataset.slug === slug);
+        return k >= 0 ? pool.splice(k, 1)[0] : leafFor(slug);
+      }),
+    );
+    leaves.filter((el) => !els.includes(el)).forEach((el) => el.remove());
     els.forEach((el) => track.appendChild(el));
     stack = next;
     leaves = els;
-    els.forEach((el) => el.querySelectorAll<HTMLElement>('a.is-missing[data-slug]').forEach((a) => absent.add(a.dataset.slug!)));
+    els.forEach((el) =>
+      el.querySelectorAll<HTMLElement>('a.is-missing[data-slug]').forEach((a) => absent.add(a.dataset.slug!)),
+    );
     decorate();
   }
 
-  // Per-trail state on each page: position, close button, which links are open,
-  // and the names of its neighbours.
   function decorate() {
     leaves.forEach((el, i) => {
       el.dataset.i = String(i);
@@ -102,59 +107,128 @@ function trail(firstLeaf: HTMLElement) {
         a.classList.toggle('is-open', !inBacklinks && a.dataset.slug === stack[i + 1]);
         a.classList.toggle('is-from', inBacklinks && a.dataset.slug === stack[i - 1]);
       });
-      for (const [cls, j, label] of [['prev', i - 1, '↑ veio de'], ['next', i + 1, '↓ segue pra']] as const) {
-        const b = el.querySelector<HTMLElement>(`.trail-nav.${cls}`)!;
-        b.hidden = !leaves[j];
-        b.dataset.goto = String(j);
-        if (leaves[j]) b.innerHTML = `${label}<b>${esc(titleOf(leaves[j]))}</b>`;
+      const navs = [
+        ['prev', i - 1, '↑ veio de'],
+        ['next', i + 1, '↓ segue pra'],
+      ] as const;
+      for (const [cls, j, label] of navs) {
+        const nav = el.querySelector<HTMLElement>(`.trail-nav.${cls}`)!;
+        nav.hidden = !leaves[j];
+        nav.dataset.goto = String(j);
+        if (leaves[j]) nav.innerHTML = `${label}<b>${esc(titleOf(leaves[j]))}</b>`;
       }
-      el.querySelectorAll('img').forEach((img) => {
-        const done = () => img.classList.add('is-loaded');
-        if (img.complete) done();
-        else { img.addEventListener('load', done, { once: true }); img.addEventListener('error', done, { once: true }); }
-      });
+      el.querySelectorAll<HTMLImageElement>('img.photo-img').forEach(pixelate);
     });
-    focus = -1; // repaint the bars
-    shown.length = 0;
+    focus = -1;
     measure();
   }
 
-  // --- margin lanes ---------------------------------------------------------------
-  // Three columns: the main column sets the page's height; the side lanes live inside
-  // it. Each side item wants to sit at the height where it appears in the text.
-  // veio de is pinned to the top, segue pra to the end of the main content. Items never
-  // overlap (16px apart) and never run past the end: going down the lane they're pushed
-  // below the one above, then going up from the end they're pulled back inside. Only a
-  // lane that can't fit at all overflows downward. On narrow screens lanes sit in the
-  // text and nothing moves.
+  // --- photos
+  // gatinho URLs are /<w>/<h>[/<id>] and serve any size.
+
+  function resized(src: string, size: (w: number, h: number) => [number, number] | null) {
+    const match = src.match(/^(https?:\/\/[^/]+)\/(\d+)\/(\d+)(\/\d+)?$/);
+    const to = match && size(+match[2], +match[3]);
+    return to ? `${match[1]}/${to[0]}/${to[1]}${match[4] ?? ''}` : null;
+  }
+
+  // Shows a tiny copy as a mosaic, then sharpens it once the real image arrives.
+  const MOSAIC = 12;
+
+  function pixelate(img: HTMLImageElement) {
+    if (img.dataset.px) return;
+    img.dataset.px = '1';
+    const show = () => img.classList.add('is-loaded');
+
+    if (img.complete || reduced.matches) {
+      if (img.complete) return show();
+      img.addEventListener('load', show, { once: true });
+      img.addEventListener('error', show, { once: true });
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    img.after(canvas);
+
+    const draw = (src: HTMLImageElement, cols: number) => {
+      const w = img.clientWidth || 1;
+      const h = img.clientHeight || 1;
+      const sw = src.naturalWidth;
+      const sh = src.naturalHeight;
+      const k = Math.max(w / sw, h / sh);
+      canvas.width = cols;
+      canvas.height = Math.max(1, Math.round((cols * h) / w));
+      ctx.drawImage(src, (sw - w / k) / 2, (sh - h / k) / 2, w / k, h / k, 0, 0, canvas.width, canvas.height);
+    };
+
+    let sharpening = false;
+    const tiny = resized(img.src, (w, h) => [MOSAIC, Math.max(1, Math.round((MOSAIC * h) / w))]);
+    if (tiny) {
+      const small = new Image();
+      small.onload = () => {
+        if (!sharpening) draw(small, MOSAIC);
+      };
+      small.src = tiny;
+    }
+
+    const finish = () => {
+      canvas.remove();
+      show();
+    };
+    const sharpen = (cols: number) => {
+      if (cols >= img.clientWidth / 2) return finish();
+      draw(img, cols);
+      setTimeout(() => sharpen(cols * 2), 90);
+    };
+    img.addEventListener(
+      'load',
+      () => {
+        sharpening = true;
+        sharpen(MOSAIC);
+      },
+      { once: true },
+    );
+    img.addEventListener('error', finish, { once: true });
+  }
+
+  // --- margin lanes
+  // Side items sit at the height they appear in the text, 16px apart, kept inside the
+  // page: pushed down past the item above, then pulled back up from the end.
 
   const LANES = ['.trail-nav.prev:not([hidden]), .side.left, .trail-nav.next:not([hidden])', '.side.right'];
   const GAP = 16;
 
   function settleLanes(leaf: HTMLElement) {
-    const H = leaf.offsetHeight;
-    for (const sel of LANES) {
-      const items = [...leaf.querySelectorAll<HTMLElement>(sel)]
+    const height = leaf.offsetHeight;
+    for (const selector of LANES) {
+      const items = [...leaf.querySelectorAll<HTMLElement>(selector)]
         .filter((el) => {
           if (getComputedStyle(el).position === 'absolute') return true;
           el.style.translate = '';
           return false;
         })
         .map((el) => ({
-          el, top: el.offsetTop, h: el.offsetHeight, y: 0,
+          el,
+          top: el.offsetTop,
+          h: el.offsetHeight,
+          y: 0,
           pin: el.classList.contains('prev') ? 'top' : el.classList.contains('next') ? 'end' : null,
         }));
+
       let floor = 0;
       for (const it of items) {
-        it.y = Math.max(it.pin === 'end' ? H - it.h : it.top, floor);
+        it.y = Math.max(it.pin === 'end' ? height - it.h : it.top, floor);
         floor = it.y + it.h + GAP;
       }
       const pushed = items.map((it) => it.y);
-      let limit = H;
+
+      let limit = height;
       for (let k = items.length - 1; k >= 0 && items[k].pin !== 'top'; k--) {
         items[k].y = Math.min(items[k].y, limit - items[k].h);
         limit = items[k].y - GAP;
       }
+
       const fits = items.every((it, k) => it.y >= 0 && (k === 0 || it.y >= items[k - 1].y + items[k - 1].h + GAP));
       items.forEach((it, k) => {
         const dy = (fits ? it.y : pushed[k]) - it.top;
@@ -163,52 +237,116 @@ function trail(firstLeaf: HTMLElement) {
     }
   }
 
-  // --- motion -------------------------------------------------------------------
-  // f is your position along the trail: a whole number while you read a page,
-  // fractional while you cross the gap to the next one. The track slides and the pages
-  // crossfade from f, so scrolling through a gap is the diagonal move. Layout is
-  // measured once (and on resize), never during scroll.
+  // --- motion
+  // f is the position along the trail: whole while reading a page, fractional while
+  // crossing to the next. Where supported, the slide and crossfade run as
+  // scroll-driven animations on the compositor; otherwise they're painted on scroll.
 
-  const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  const CROSS = 0.34; // the crossing takes the last 34vh of scroll before a page's rest point
+  const CROSS = 0.6; // share of the viewport the crossing takes
+  const EDGE = 188; // minimum space above a resting page and after the last one
+  const easeInOut = (t: number) => (1 - Math.cos(Math.PI * t)) / 2;
+  const EASE_IN_OUT = 'cubic-bezier(0.37, 0, 0.63, 1)';
 
-  let m: { anchor: number; x: number }[] = [];
+  const ScrollTimelineCtor = (window as any).ScrollTimeline;
+  const timeline = ScrollTimelineCtor && new ScrollTimelineCtor({ source: document.scrollingElement });
+
+  let marks: { anchor: number; start: number; x: number }[] = [];
+  let anims: Animation[] = [];
+  const shown: string[] = [];
+
   function measure() {
     const vh = innerHeight;
+    const rest = (el: HTMLElement) => Math.max(EDGE, (vh - el.offsetHeight) / 2);
     leaves.forEach(settleLanes);
-    m = leaves.map((el) => ({
-      anchor: el.offsetTop - Math.max(80, Math.min((vh - el.offsetHeight) / 2, vh * 0.38)),
+
+    // pages rest centered, or EDGE from the top when they don't fit; the document starts
+    // at the first page's rest and ends at the last one's, at least EDGE past its text
+    const last = leaves.at(-1)!;
+    track.style.paddingTop = `${rest(leaves[0])}px`;
+    const anchors = leaves.map((el) => el.offsetTop - rest(el));
+    const bottom = last.offsetTop + last.offsetHeight;
+    const end = Math.max(anchors.at(-1)! + vh, bottom + EDGE);
+    track.style.paddingBottom = `${Math.ceil(end - bottom)}px`;
+
+    marks = leaves.map((el, i) => ({
+      anchor: anchors[i],
+      start: i ? Math.max(anchors[i - 1], anchors[i] - vh * CROSS) : anchors[i],
       x: el.offsetLeft,
     }));
-    // end the document exactly where the last page rests: no empty scroll after it
-    const pad = parseFloat(track.style.paddingBottom) || 0;
-    const content = track.offsetHeight - pad;
-    track.style.paddingBottom = `${Math.max(24, Math.ceil(m[m.length - 1].anchor + vh - content))}px`;
+
+    bind();
     kick();
   }
   new ResizeObserver(measure).observe(track);
 
+  function bind() {
+    anims.forEach((a) => a.cancel());
+    anims = [];
+    shown.length = 0;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    if (!timeline || max <= 0) return;
+
+    const at = (y: number) => Math.min(1, Math.max(0, y / max));
+    const stops = [{ offset: 0, k: 0, easing: 'linear' }];
+    marks.forEach((mark, k) => {
+      if (!k) return;
+      stops.push({ offset: at(mark.start), k: k - 1, easing: EASE_IN_OUT });
+      stops.push({ offset: at(mark.anchor), k, easing: 'linear' });
+    });
+    stops.push({ offset: 1, k: marks.length - 1, easing: 'linear' });
+    for (let i = 1; i < stops.length; i++) stops[i].offset = Math.max(stops[i].offset, stops[i - 1].offset);
+
+    const options = { timeline, fill: 'both' } as KeyframeAnimationOptions;
+    track.style.transform = '';
+    anims.push(
+      track.animate(
+        stops.map(({ offset, k, easing }) => ({
+          offset,
+          easing,
+          transform: `translate3d(${marks[0].x - marks[k].x}px, 0, 0)`,
+        })),
+        options,
+      ),
+    );
+    leaves.forEach((el, j) => {
+      el.style.opacity = '';
+      anims.push(
+        el.animate(
+          stops.map(({ offset, k, easing }) => ({ offset, easing, opacity: k === j ? 1 : 0.2 })),
+          options,
+        ),
+      );
+    });
+  }
+
   function trailPos() {
-    const y = scrollY;
     let i = 0;
-    while (m[i + 1] && y >= m[i + 1].anchor) i++;
-    if (!m[i + 1]) return i;
-    const next = m[i + 1].anchor, start = next - innerHeight * CROSS;
-    return y <= start ? i : i + easeInOut((y - start) / (next - start));
+    while (marks[i + 1] && scrollY >= marks[i + 1].anchor) i++;
+    if (!marks[i + 1]) return i;
+    const { start, anchor } = marks[i + 1];
+    return scrollY <= start ? i : i + easeInOut((scrollY - start) / (anchor - start));
   }
 
   let raf = 0;
-  const kick = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (m.length) paint(trailPos()); }); };
-
-  const shown: string[] = [];
-  function paint(f: number) {
-    const i = Math.min(Math.floor(f), m.length - 1), t = f - i;
-    const x = m[i].x + ((m[i + 1] ? m[i + 1].x : m[i].x) - m[i].x) * t;
-    track.style.transform = `translate3d(${(m[0].x - x).toFixed(1)}px, 0, 0)`;
-    leaves.forEach((el, j) => {
-      const o = (0.2 + 0.8 * Math.max(0, 1 - Math.abs(f - j))).toFixed(2);
-      if (shown[j] !== o) { el.style.opacity = o; shown[j] = o; }
+  function kick() {
+    raf ||= requestAnimationFrame(() => {
+      raf = 0;
+      if (marks.length) paint(trailPos());
     });
+  }
+
+  function paint(f: number) {
+    if (!anims.length) {
+      const i = Math.min(Math.floor(f), marks.length - 1);
+      const next = marks[i + 1] ?? marks[i];
+      const x = marks[i].x + (next.x - marks[i].x) * (f - i);
+      track.style.transform = `translate3d(${(marks[0].x - x).toFixed(1)}px, 0, 0)`;
+      leaves.forEach((el, j) => {
+        const opacity = (0.2 + 0.8 * Math.max(0, 1 - Math.abs(f - j))).toFixed(2);
+        if (shown[j] !== opacity) el.style.opacity = shown[j] = opacity;
+      });
+    }
+
     const active = Math.round(f);
     if (active !== focus) {
       focus = active;
@@ -218,39 +356,42 @@ function trail(firstLeaf: HTMLElement) {
   }
 
   function paintBars() {
-    crumbs.innerHTML = leaves.map((el, i) =>
-      `${i ? '<span>→</span>' : ''}<button data-crumb="${i}" class="${i === focus ? 'is-active' : ''}">${esc(titleOf(el))}</button>`).join('');
-    document.querySelectorAll<HTMLElement>('[data-go]').forEach((a) => a.classList.toggle('is-active', stack[focus] === a.dataset.go));
+    crumbs.innerHTML = leaves
+      .map((el, i) => {
+        const arrow = i ? '<span>→</span>' : '';
+        return `${arrow}<button data-crumb="${i}" class="${i === focus ? 'is-active' : ''}">${esc(titleOf(el))}</button>`;
+      })
+      .join('');
+    document
+      .querySelectorAll<HTMLElement>('[data-go]')
+      .forEach((a) => a.classList.toggle('is-active', stack[focus] === a.dataset.go));
     toTop.hidden = focus <= 0;
     const title = titleOf(leaves[focus]);
     document.title = stack[focus] === 'index' || !title ? 'guiksr' : `${title} · guiksr`;
   }
 
-  // clicks use the browser's own smooth scroll
   function scrollToLeaf(i: number, instant = false) {
     if (!leaves[i]) return;
-    if (!m[i]) measure();
-    scrollTo({ top: m[i].anchor, behavior: instant || reduced.matches ? 'auto' : 'smooth' });
+    if (!marks[i]) measure();
+    scrollTo({ top: marks[i].anchor, behavior: instant || reduced.matches ? 'auto' : 'smooth' });
   }
 
   function enter(el: HTMLElement) {
     if (reduced.matches) return;
-    [...el.children].forEach((c, k) => (c as HTMLElement).style.setProperty('--k', String(k)));
+    [...el.children].forEach((child, k) => (child as HTMLElement).style.setProperty('--k', String(k)));
     el.classList.add('is-entering');
     setTimeout(() => el.classList.remove('is-entering'), 1800);
   }
 
-  // pages being cut from the trail dissolve before they go
   function leave(from: number) {
     const going = leaves.slice(from);
     if (!going.length || reduced.matches) return Promise.resolve();
     going.forEach((el) => el.classList.add('is-leaving'));
-    return new Promise((r) => setTimeout(r, 320));
+    return new Promise((resolve) => setTimeout(resolve, 320));
   }
 
-  // --- opening and closing ---------------------------------------------------------
+  // --- opening and closing
 
-  let busy = false;
   async function open(i: number, slug: string) {
     if (busy) return;
     if (stack[i - 1] === slug) return scrollToLeaf(i - 1);
@@ -258,9 +399,9 @@ function trail(firstLeaf: HTMLElement) {
     busy = true;
     prefetch(slug);
     await leave(i + 1);
-    await build(stack.slice(0, i + 1).concat(slug));
+    await build([...stack.slice(0, i + 1), slug]);
     writeUrl();
-    enter(leaves[leaves.length - 1]);
+    enter(leaves.at(-1)!);
     scrollToLeaf(leaves.length - 1);
     busy = false;
   }
@@ -276,65 +417,81 @@ function trail(firstLeaf: HTMLElement) {
     busy = false;
   }
 
-  // --- lightbox ------------------------------------------------------------------
-  // The photo grows out of its spot in the text, then swaps to a sharper copy sized
-  // for the screen. Click, Esc or scrolling closes it.
+  // --- lightbox
 
-  const lb = document.querySelector('.lightbox') as HTMLElement;
-  const lbImg = lb.querySelector('img') as HTMLImageElement;
-  const lbCap = lb.querySelector('p') as HTMLElement;
+  const lightbox = document.querySelector('.lightbox') as HTMLElement;
+  const lbImg = lightbox.querySelector('img') as HTMLImageElement;
+  const lbCaption = lightbox.querySelector('p') as HTMLElement;
   const EASE = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
   let lbFrom: HTMLImageElement | null = null;
 
-  // gatinho URLs are /<w>/<h>[/<id>]: ask for the size we'll actually show
-  function sharper(src: string, w: number) {
-    const mm = src.match(/^(https?:\/\/[^/]+)\/(\d+)\/(\d+)(\/\d+)?$/);
-    if (!mm) return src;
-    const k = Math.min(2400 / Math.max(+mm[2], +mm[3]), (w * devicePixelRatio) / +mm[2]);
-    return k > 1 ? `${mm[1]}/${Math.round(+mm[2] * k)}/${Math.round(+mm[3] * k)}${mm[4] || ''}` : src;
+  const sharper = (src: string, width: number) =>
+    resized(src, (w, h) => {
+      const k = Math.min(2000 / Math.max(w, h), (width * devicePixelRatio) / w);
+      return k > 1 ? [Math.round(w * k), Math.round(h * k)] : null;
+    }) ?? src;
+
+  function flight(from: DOMRect, to: DOMRect) {
+    return `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`;
   }
 
   function openImage(img: HTMLImageElement) {
-    const nw = img.naturalWidth || img.width, nh = img.naturalHeight || img.height;
-    const s = Math.min((innerWidth * 0.9) / nw, (innerHeight * 0.82) / nh);
-    const w = Math.round(nw * s), h = Math.round(nh * s);
+    const nw = img.naturalWidth || img.width;
+    const nh = img.naturalHeight || img.height;
+    const scale = Math.min((innerWidth * 0.9) / nw, (innerHeight * 0.82) / nh);
+    const w = Math.round(nw * scale);
+    const h = Math.round(nh * scale);
+
     lbFrom = img;
     lbImg.src = img.currentSrc || img.src;
     Object.assign(lbImg.style, { width: `${w}px`, height: `${h}px` });
-    lbCap.textContent = img.alt;
-    lb.hidden = false;
+    lbCaption.textContent = img.alt;
+    lightbox.hidden = false;
+
     const big = new Image();
-    big.onload = () => { if (lbFrom === img) lbImg.src = big.src; };
+    big.onload = () => {
+      if (lbFrom === img) lbImg.src = big.src;
+    };
     big.src = sharper(img.src, w);
+
     if (reduced.matches) return;
-    const from = img.getBoundingClientRect(), to = lbImg.getBoundingClientRect();
-    lbImg.animate([{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})` }, { transform: 'none' }],
-      { duration: 420, easing: EASE });
-    lb.animate([{ backgroundColor: 'transparent' }, {}], { duration: 420, easing: EASE });
-    lbCap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 200, fill: 'backwards' });
+    const from = flight(img.getBoundingClientRect(), lbImg.getBoundingClientRect());
+    lbImg.animate([{ transform: from }, { transform: 'none' }], { duration: 420, easing: EASE });
+    lightbox.animate([{ backgroundColor: 'transparent' }, {}], { duration: 420, easing: EASE });
+    lbCaption.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 200, fill: 'backwards' });
   }
 
   function closeImage(fly = true) {
-    if (lb.hidden || !lbFrom) return;
+    if (lightbox.hidden || !lbFrom) return;
     const img = lbFrom;
     lbFrom = null;
-    const done = () => { lb.hidden = true; lbImg.removeAttribute('src'); };
+    const done = () => {
+      lightbox.hidden = true;
+      lbImg.removeAttribute('src');
+    };
     if (reduced.matches) return done();
-    const from = img.getBoundingClientRect(), to = lbImg.getBoundingClientRect();
+
+    const from = img.getBoundingClientRect();
     const onScreen = fly && from.bottom > 0 && from.top < innerHeight;
-    const fade = lb.animate([{}, { backgroundColor: 'transparent' }], { duration: 300, easing: EASE, fill: 'forwards' });
-    fade.onfinish = () => { done(); fade.cancel(); };
-    const cap = lbCap.animate([{}, { opacity: 0 }], { duration: 150, fill: 'forwards' });
-    cap.onfinish = () => cap.cancel();
-    const fly2 = lbImg.animate(onScreen
-      ? [{}, { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})` }]
-      : [{}, { opacity: 0 }], { duration: 300, easing: EASE, fill: 'forwards' });
-    fly2.onfinish = () => fly2.cancel();
+    const out = { duration: 300, easing: EASE, fill: 'forwards' } as const;
+
+    const fade = lightbox.animate([{}, { backgroundColor: 'transparent' }], out);
+    fade.onfinish = () => {
+      done();
+      fade.cancel();
+    };
+    const caption = lbCaption.animate([{}, { opacity: 0 }], { duration: 150, fill: 'forwards' });
+    caption.onfinish = () => caption.cancel();
+    const back = lbImg.animate(
+      [{}, onScreen ? { transform: flight(from, lbImg.getBoundingClientRect()) } : { opacity: 0 }],
+      out,
+    );
+    back.onfinish = () => back.cancel();
   }
 
-  lb.addEventListener('click', () => closeImage());
+  lightbox.addEventListener('click', () => closeImage());
 
-  // --- events -------------------------------------------------------------------
+  // --- events
 
   const plainClick = (e: MouseEvent) => !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0);
 
@@ -343,24 +500,29 @@ function trail(firstLeaf: HTMLElement) {
     const leaf = target.closest<HTMLElement>('.leaf');
     if (!leaf) return;
     const i = +leaf.dataset.i!;
-    const pic = target.closest<HTMLImageElement>('figure.photo img');
-    if (pic) return openImage(pic);
+
+    const photo = target.closest<HTMLImageElement>('figure.photo img');
+    if (photo) return openImage(photo);
     const nav = target.closest<HTMLElement>('.trail-nav');
     if (nav) return scrollToLeaf(+nav.dataset.goto!);
     if (target.closest('.leaf-close')) return close(i);
+
     const a = target.closest<HTMLAnchorElement>('a[data-slug]');
     if (a) {
-      if (plainClick(e)) { e.preventDefault(); open(i, a.dataset.slug!); }
+      if (plainClick(e)) {
+        e.preventDefault();
+        open(i, a.dataset.slug!);
+      }
       return;
     }
     if (!leaf.classList.contains('is-active') && !getSelection()?.toString()) scrollToLeaf(i);
   });
 
-  // header and footer: a section already on the trail gets focused; otherwise it
-  // opens after the page you're reading, same as clicking a link in it
+  // header sections focus the page if it's on the trail, otherwise open it next
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     if (target.closest('.track')) return;
+
     const go = target.closest<HTMLAnchorElement>('[data-go]');
     if (go && plainClick(e)) {
       e.preventDefault();
@@ -372,18 +534,24 @@ function trail(firstLeaf: HTMLElement) {
     if (target.closest('[data-top]')) return scrollToLeaf(0);
   });
 
-  // start fetching a page as soon as a link to it is hovered
   document.addEventListener('pointerover', (e) => {
     const a = (e.target as HTMLElement).closest<HTMLElement>('a[data-slug], a[data-go]');
     if (a) prefetch(a.dataset.slug || a.dataset.go!);
   });
 
-  addEventListener('scroll', () => { kick(); closeImage(false); }, { passive: true });
+  addEventListener(
+    'scroll',
+    () => {
+      kick();
+      closeImage(false);
+    },
+    { passive: true },
+  );
   addEventListener('resize', measure);
 
   addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    if (!lb.hidden) return closeImage();
+    if (!lightbox.hidden) return closeImage();
     if (stack.length > 1) close(stack.length - 1);
   });
 
@@ -392,9 +560,15 @@ function trail(firstLeaf: HTMLElement) {
     scrollToLeaf(leaves.length - 1, true);
   });
 
-  // --- start ------------------------------------------------------------------------
+  // --- start
+  // The loader holds for at least 650ms so a fast load reads as a beat, not a flash.
 
   history.scrollRestoration = 'manual';
-  build(readUrl()).then(() => scrollToLeaf(leaves.length - 1, true));
-  document.fonts.ready.then(() => { measure(); scrollToLeaf(leaves.length - 1, true); });
+  const pause = new Promise((resolve) => setTimeout(resolve, reduced.matches ? 0 : 650));
+  Promise.all([build(readUrl()), document.fonts.ready, pause]).then(() => {
+    measure();
+    scrollToLeaf(leaves.length - 1, true);
+    document.querySelector('.loader')?.classList.add('is-done');
+    enter(leaves.at(-1)!);
+  });
 }

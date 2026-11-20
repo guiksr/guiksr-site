@@ -35,7 +35,7 @@ Playful, curious, authentic. The energy of someone who makes things because they
 ## Stack & Content Model
 
 - **Astro, static.** Every page is a markdown file in `src/content/`; editing the site means editing `.md` files. `astro build` outputs plain HTML. No CMS, no server, no database.
-- Frontmatter carries `title`, `kind` (`home`, `índice`, `post`, `foto`, `filme`, `página`) and optional `date`/`description`. Folders map to sections: `blog/`, `fotolog/`, `filmes/`.
+- Frontmatter carries `title`, `kind` (`home`, `índice`, `post`, `foto`, `filme`, `página`) and optional `date`/`description`. Folders map to sections (only `blog/` at launch). Full authoring reference: `docs/writing.md`.
 - A few block components cover what plain markdown can't: `:::left` / `:::right` (things beside the text), `:::facts` (a fact sheet), `:::photos` (a photo grid). See README.md.
 - **Two-way links.** Internal links are plain markdown links (`[blog](/blog)`). Backlinks ("linkado por") are computed at build time from the links in every file.
 - **The trail, not page loads.** With JavaScript, internal links open the next page beside the current one along a diagonal (see DESIGN.md §7). The address holds the whole trail (`/blog/janelas/?w=index,blog`), so a copied link restores it.

@@ -8,9 +8,9 @@ interface Props {
   title: string;
   description?: string;
 }
-const { title, description = 'o cantinho do guiksr na internet: blog, fotolog, filmes e coisas.' } = Astro.props;
+const { title, description = 'o cantinho do guiksr na internet.' } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const SECTIONS = ['blog', 'fotolog', 'filmes', 'coisas', 'sobre'];
+const SECTIONS = ['blog', 'sobre'];
 ---
 
 <!doctype html>
@@ -29,13 +29,28 @@ const SECTIONS = ['blog', 'fotolog', 'filmes', 'coisas', 'sobre'];
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <script is:inline>document.documentElement.classList.add('js');</script>
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
   </head>
   <body>
+    <div class="loader" aria-hidden="true">
+      <div class="loader-steps">
+        <i></i>
+        <i></i>
+        <i></i>
+      </div>
+    </div>
     <header class="sitebar top">
-      <a class="mark" href="/" data-go="index">guiksr</a>
+      <a class="mark" href="/" data-go="index">
+        guiksr
+      </a>
       <nav class="sections" aria-label="seções">
-        {SECTIONS.map((s) => <a href={`/${s}/`} data-go={s}>{s}</a>)}
+        {SECTIONS.map((s) => (
+          <a href={`/${s}/`} data-go={s}>
+            {s}
+          </a>
+        ))}
       </nav>
     </header>
 
@@ -48,10 +63,15 @@ const SECTIONS = ['blog', 'fotolog', 'filmes', 'coisas', 'sobre'];
 
     <footer class="sitebar bottom">
       <nav class="crumbs" aria-label="rastro"></nav>
-      <button data-top hidden>voltar ao começo ↑</button>
+      <button data-top hidden>
+        voltar ao começo ↑
+      </button>
     </footer>
 
-    <div class="lightbox" hidden><img alt="" /><p></p></div>
+    <div class="lightbox" hidden>
+      <img alt="" />
+      <p></p>
+    </div>
 
     <script>
       import '../scripts/trail.ts';

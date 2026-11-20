@@ -5,9 +5,10 @@ import { slugOf } from './slugs.mjs';
 const cls = (node) => [].concat(node.properties?.className || []);
 const textOf = (node) => (node.type === 'text' ? node.value : (node.children || []).map(textOf).join(''));
 
-// gatinho-style URLs end in /<w>/<h>[/<id>]: use them to reserve the image's space
+// gatinho URLs end in /<w>/<h>[/<id>] and local files in -<w>x<h>.<ext>, which reserves the image's space
 function sized(img) {
-  const m = String(img.properties.src).match(/\/(\d+)\/(\d+)(?:\/\d+)?$/);
+  const src = String(img.properties.src);
+  const m = src.match(/\/(\d+)\/(\d+)(?:\/\d+)?$/) || src.match(/-(\d+)x(\d+)\.\w+$/);
   img.properties = {
     ...img.properties,
     className: ['photo-img'],
@@ -18,8 +19,7 @@ function sized(img) {
   return img;
 }
 
-// Internal links (/blog/janelas) get their slug and a trailing slash; links to pages
-// that don't exist yet are marked. External links open in a new tab.
+// internal links get a slug and trailing slash (missing pages are marked); external ones open in a new tab
 function link(node, slugs, extra = ['ilink']) {
   const href = String(node.properties.href || '');
   if (href.startsWith('/')) {
@@ -41,7 +41,7 @@ function link(node, slugs, extra = ['ilink']) {
 function photo(node, slugs) {
   const img = node.tagName === 'img' ? node : node.children.find((c) => c.tagName === 'img');
   const alt = img.properties.alt;
-  const kids = [sized(img), ...(alt ? [h('span.photo-cap', alt)] : [])];
+  const kids = [h('span.photo-frame', [sized(img)]), ...(alt ? [h('span.photo-cap', alt)] : [])];
   if (node.tagName !== 'a') return h('figure.photo', kids);
   const a = link(node, slugs, []);
   a.properties.className = ['photo', ...cls(a).filter((c) => c !== 'xlink')];
@@ -55,15 +55,20 @@ const meaningful = (n) => !(n.type === 'text' && !n.value.trim());
 export default function rehypeSite({ slugs }) {
   return (tree) => {
     visit(tree, 'element', (node, index, parent) => {
-      // :::photos — every image inside becomes one grid cell
+      // :::photos: each image becomes a grid cell
       if (cls(node).includes('photos')) {
         const found = [];
-        visit(node, 'element', (n) => { if (isPhoto(n)) { found.push(photo(n, slugs)); return SKIP; } });
+        visit(node, 'element', (n) => {
+          if (isPhoto(n)) {
+            found.push(photo(n, slugs));
+            return SKIP;
+          }
+        });
         node.children = found;
         return SKIP;
       }
 
-      // :::facts — "- key: value" lines become a definition list
+      // :::facts: "key: value" items become a definition list
       if (cls(node).includes('facts')) {
         const rows = [];
         visit(node, 'element', (n) => {

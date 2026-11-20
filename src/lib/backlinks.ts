@@ -3,7 +3,7 @@ import { slugOf } from './slugs.mjs';
 
 export type Backlink = { slug: string; title: string };
 
-// Who links to whom, read from the markdown of every page: any [text](/path).
+// pages linking to each page, from every [text](/path) in the markdown
 export function backlinksFor(entries: CollectionEntry<'pages'>[]) {
   const map = new Map<string, Backlink[]>();
   for (const entry of entries) {

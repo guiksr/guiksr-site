@@ -1,5 +1,4 @@
 ---
-// One page of the trail: a column of text, plus the things that live in its margins.
 import { render, type CollectionEntry } from 'astro:content';
 import { pathOf } from '../lib/slugs.mjs';
 import type { Backlink } from '../lib/backlinks';
@@ -15,31 +14,39 @@ const shown = (s: string) => `/${s === 'index' ? '' : s}`;
 
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const d = entry.data.date;
-const date = d && `${entry.data.kind === 'filme' ? 'visto em ' : ''}${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+const date =
+  d &&
+  `${entry.data.kind === 'filme' ? 'visto em ' : ''}${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 ---
 
 <article class="leaf" data-slug={slug} data-kind={entry.data.kind} data-title={entry.data.title}>
   <div class="leaf-meta">
     <span class="path">{shown(slug)}</span>
-    <span>{entry.data.kind}{date && ` · ${date}`}</span>
-    <button class="leaf-close" aria-label="fechar daqui pra frente" hidden>×</button>
+    <span>
+      {entry.data.kind}
+      {date && ` · ${date}`}
+    </span>
+    <button class="leaf-close" aria-label="fechar daqui pra frente" hidden>
+      ×
+    </button>
   </div>
   <button class="trail-nav prev" hidden></button>
   <h1>{entry.data.title}</h1>
   <Content />
-  {
-    backlinks.length > 0 && (
-      <footer class="backlinks">
-        <h2>linkado por</h2>
-        <ul>
-          {backlinks.map((b) => (
-            <li>
-              <a class="ilink" href={pathOf(b.slug)} data-slug={b.slug}>{b.title}</a> <span class="bl-path">{shown(b.slug)}</span>
-            </li>
-          ))}
-        </ul>
-      </footer>
-    )
-  }
+  {backlinks.length > 0 && (
+    <footer class="backlinks">
+      <h2>linkado por</h2>
+      <ul>
+        {backlinks.map((b) => (
+          <li>
+            <a class="ilink" href={pathOf(b.slug)} data-slug={b.slug}>
+              {b.title}
+            </a>{' '}
+            <span class="bl-path">{shown(b.slug)}</span>
+          </li>
+        ))}
+      </ul>
+    </footer>
+  )}
   <button class="trail-nav next" hidden></button>
 </article>

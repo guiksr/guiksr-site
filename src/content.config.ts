@@ -2,8 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
-// Every page is a markdown file in src/content. Its path is its address:
-// src/content/blog/janelas.md -> /blog/janelas/
+// src/content/blog/site-novo.md -> /blog/site-novo/
 const pages = defineCollection({
   loader: glob({
     pattern: '**/*.md',

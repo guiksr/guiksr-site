@@ -1,12 +1,6 @@
 import { visit } from 'unist-util-visit';
 
-// Block components, written as container directives in the markdown:
-//
-//   :::left / :::right   anything that lives beside the text, in a margin lane
-//   :::facts             a "key: value" list shown as a fact sheet, right margin
-//   :::photos            a grid of images (linked images open that page)
-//
-// They become plain elements here; rehype-site.mjs finishes the markup.
+// :::left, :::right, :::facts and :::photos become elements; rehype-site.mjs finishes them.
 const BLOCKS = {
   left: { tag: 'aside', className: ['side', 'left'] },
   right: { tag: 'aside', className: ['side', 'right'] },
@@ -22,7 +16,7 @@ export default function remarkBlocks() {
         node.data = { hName: tag, hProperties: { className } };
         return;
       }
-      // anything else that looks like a directive was just text ("10:30", "ex:ample")
+      // other directives were plain text, like "10:30"
       if (['textDirective', 'leafDirective', 'containerDirective'].includes(node.type) && parent) {
         const marker = node.type === 'textDirective' ? ':' : node.type === 'leafDirective' ? '::' : ':::';
         parent.children.splice(index, 1, { type: 'text', value: marker + node.name }, ...(node.children || []));

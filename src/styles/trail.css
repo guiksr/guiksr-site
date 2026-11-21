@@ -1,0 +1,129 @@
+/* the trail and the page: column, meta line, type, links */
+
+.track {
+  position: relative;
+  z-index: 1;
+  padding: 30vh 0 30vh;
+  will-change: transform;
+}
+
+.leaf {
+  display: flow-root;
+  position: relative;
+  width: var(--col);
+  margin: 0 0 42vh calc((100vw - var(--col)) / 2 - var(--shift) + var(--i, 0) * var(--step));
+}
+.leaf:last-child {
+  margin-bottom: 0;
+}
+.js .leaf:not(.is-active) {
+  cursor: pointer;
+}
+.js .leaf:not(.is-active):hover {
+  opacity: 0.55 !important;
+}
+
+.leaf-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+.leaf-meta .path {
+  color: var(--text);
+}
+.leaf-close {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.leaf-close:hover {
+  color: var(--link);
+}
+.leaf-close[hidden] {
+  display: none;
+}
+
+.leaf h1 {
+  font: 700 30px/1 var(--display);
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+  text-wrap: balance;
+}
+.leaf[data-kind='home'] h1 {
+  font-size: 40px;
+  color: var(--link);
+}
+.leaf h2 {
+  font: 700 17px/1.2 var(--display);
+  margin: 20px 0 4px;
+}
+.leaf p,
+.leaf ul {
+  margin: 0 0 16px;
+}
+.leaf ul {
+  padding: 0;
+  list-style: none;
+}
+.leaf li {
+  padding-left: 2ch;
+  text-indent: -2ch;
+}
+.leaf li + li {
+  margin-top: 4px;
+}
+.leaf li::before {
+  content: '→ ';
+  color: var(--dim);
+}
+.leaf blockquote {
+  font: 600 20px/1.2 var(--display);
+  margin: 18px 0;
+}
+.leaf blockquote p {
+  margin: 0;
+}
+.leaf blockquote p::before {
+  content: '“';
+}
+.leaf blockquote p::after {
+  content: '”';
+}
+.leaf code {
+  background: oklch(0.25 0.01 350);
+  padding: 0 3px;
+  font-size: 0.92em;
+}
+.leaf strong {
+  color: oklch(0.98 0 0);
+}
+
+.ilink {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.ilink:hover {
+  background: oklch(0.3 0.04 350);
+}
+.ilink.is-open,
+.ilink.is-from {
+  background: var(--link);
+  color: var(--night);
+  text-decoration: none;
+}
+.ilink.is-missing {
+  color: var(--dim);
+  text-decoration-style: dashed;
+}
+.xlink::after {
+  content: '↗';
+  font-size: 0.85em;
+}

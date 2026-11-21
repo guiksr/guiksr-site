@@ -1,0 +1,54 @@
+/* tokens and the bare elements */
+
+:root {
+  --night: oklch(0.16 0.008 350);
+  --text: oklch(0.9 0.01 350);
+  --dim: oklch(0.6 0.012 350);
+  --link: oklch(0.82 0.08 350);
+  --raised: oklch(0.22 0.01 350);
+
+  --display: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'Fragment Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --col: min(360px, 100vw - 48px);
+  --gap: 64px;
+  --step: calc(var(--col) + var(--gap));
+  --gutter: 56px;
+  --lane: 220px;
+  --shift: clamp(0px, (100vw - 1000px) / 4, 120px);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  color-scheme: dark;
+}
+@media (max-width: 720px) {
+  :root {
+    --step: 12px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  background: var(--night);
+  overflow-x: clip;
+}
+body {
+  margin: 0;
+  overflow-x: clip;
+  color: var(--text);
+  font: 13px/1.65 var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+a {
+  color: var(--link);
+}
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}

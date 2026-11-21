@@ -1,0 +1,87 @@
+/* photos, the grid and the stack */
+
+.photo {
+  display: block;
+  margin: 24px 0;
+  color: inherit;
+  text-decoration: none;
+}
+.photo-frame {
+  display: block;
+  position: relative;
+  background: var(--raised);
+}
+.photo-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+.photo-cap {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--dim);
+}
+.photos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 8px;
+  margin: 14px 0;
+}
+.photos .photo {
+  margin: 0;
+}
+.photos .photo-img {
+  aspect-ratio: 1;
+}
+.photos.stack {
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+.photos.stack .photo-img {
+  aspect-ratio: 3 / 2;
+}
+a.photo:hover .photo-img,
+a.photo.is-open .photo-img {
+  outline: 3px solid var(--link);
+  outline-offset: -1px;
+}
+a.photo.is-open .photo-cap {
+  color: var(--link);
+}
+.js .leaf figure.photo img {
+  cursor: zoom-in;
+}
+/* the script draws a sharpening mosaic on the canvas until the image loads */
+.js .leaf img.photo-img {
+  opacity: 0;
+}
+.js .leaf img.photo-img.is-loaded {
+  opacity: 1;
+}
+.photo-frame canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.backlinks {
+  margin-top: 20px;
+  font-size: 12px;
+}
+.backlinks h2 {
+  font: 11px/1.4 var(--mono) !important;
+  color: var(--dim);
+  margin: 0 0 4px !important;
+}
+.leaf .backlinks li::before {
+  content: '← ';
+}
+.bl-path {
+  color: var(--dim);
+  font-size: 11px;
+}

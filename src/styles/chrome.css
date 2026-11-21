@@ -1,0 +1,99 @@
+/* fixed header and footer */
+
+.sitebar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  padding: 16px 24px;
+  font-size: 11px;
+  color: var(--dim);
+}
+.sitebar.top {
+  top: 0;
+  justify-content: space-between;
+}
+.sitebar.bottom {
+  bottom: 0;
+}
+.sitebar a,
+.sitebar button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.3s var(--ease);
+}
+.sitebar a:hover,
+.sitebar button:hover {
+  color: var(--text);
+}
+.sitebar .mark {
+  font: 700 20px/1 var(--display);
+  letter-spacing: -0.02em;
+  color: var(--link);
+}
+.sections {
+  display: flex;
+  gap: 14px;
+}
+.sections a.is-active {
+  color: var(--link);
+}
+.crumbs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(90deg, #000 85%, transparent);
+}
+.crumbs span {
+  opacity: 0.5;
+}
+.crumbs button.is-active {
+  color: var(--text);
+}
+.sitebar [data-top] {
+  margin-left: auto;
+}
+.sitebar [hidden] {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .crumbs {
+    display: none;
+  }
+  .sitebar {
+    gap: 14px;
+    padding-inline: 16px;
+  }
+  .sections {
+    gap: 10px;
+  }
+}
+
+.veil {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 16vh;
+  pointer-events: none;
+  z-index: 5;
+}
+.veil.top {
+  top: 0;
+  background: linear-gradient(var(--night) 35%, transparent);
+}
+.veil.bottom {
+  bottom: 0;
+  background: linear-gradient(transparent, var(--night) 65%);
+}

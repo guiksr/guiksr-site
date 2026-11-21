@@ -1,0 +1,33 @@
+/* pages surfacing and dissolving; reduced motion turns every animation off, so this comes last */
+
+@keyframes surface {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.leaf.is-entering > * {
+  animation: surface 0.9s var(--ease) both;
+  animation-delay: calc(180ms + var(--k) * 55ms);
+}
+@keyframes dissolve {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.leaf.is-leaving > * {
+  animation: dissolve 0.32s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  .js .loader {
+    display: none;
+  }
+}

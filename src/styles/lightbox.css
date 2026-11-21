@@ -1,0 +1,28 @@
+/* lightbox */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: oklch(0.12 0.008 350 / 0.94);
+  cursor: zoom-out;
+}
+.lightbox[hidden] {
+  display: none;
+}
+.lightbox img {
+  display: block;
+  transform-origin: 0 0;
+  background: var(--raised);
+}
+.lightbox p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--dim);
+  min-height: 1lh;
+}

@@ -7,11 +7,12 @@ kind: home
 ![](/eu-720x960.jpg)
 :::
 
-sou designer e programador. atualmente trabalho na [2na8](https://2na8.com).
+Sou designer e programador. Atualmente trabalho na [2na8](https://2na8.com).
 
-isso aqui é meu cantinho na internet. por enquanto tem um [blog](/blog) e uma página [sobre](/sobre) mim; o resto vai chegando.
+Esse é o meu site pessoal. Tenho um [blog](/blog) e uma página [sobre](/sobre) mim. Além disso, mostro um pouco das minhas [viagens](/viagens).
 
-cada link abre uma página nova ao lado, sem sair do lugar. o endereço guarda o caminho todo: dá pra mandar pra alguém e abre tudo do jeito que tá.
+Se estiver interessado, também falo um pouco sobre esse [site](/site) e [navegação](/navegacao).
 
-- [sobre](/sobre)
+- [email](mailto:fala@guiksr.com)
+- [instagram](https://instagram.com/guiksr)
 - [github](https://github.com/guiksr)

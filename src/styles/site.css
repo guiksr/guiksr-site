@@ -181,6 +181,43 @@ button:focus-visible {
   font-size: 0.85em;
 }
 
+/* :foto and :revela — link-like buttons that reveal a photo or a note in the margin */
+.reveal-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--link);
+  text-decoration: underline dotted 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.reveal-link::after {
+  content: '';
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 4px;
+  vertical-align: -0.05em;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='black' stroke-width='1.3'%3E%3Crect x='.65' y='.65' width='10.7' height='10.7'/%3E%3Cpath d='M1 10.5 4.5 6.5l3 3L9 8l2 2'/%3E%3Ccircle cx='8.3' cy='3.7' r='1.1'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.reveal-link.is-note::after {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='black' stroke-width='1.3'%3E%3Cpath d='M.65.65h10.7v7.7l-3 3H.65z'/%3E%3Cpath d='M3 4h6M3 6.5h4'/%3E%3C/svg%3E");
+}
+.reveal-link:hover {
+  background: oklch(0.3 0.04 350);
+}
+.reveal-link.is-open {
+  background: var(--link);
+  color: var(--night);
+  text-decoration: none;
+}
+.js .side.reveal:not(.is-shown) {
+  display: none;
+}
+
 /* --- photos */
 .photo {
   display: block;
@@ -216,6 +253,13 @@ button:focus-visible {
 }
 .photos .photo-img {
   aspect-ratio: 1;
+}
+.photos.stack {
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+.photos.stack .photo-img {
+  aspect-ratio: 3 / 2;
 }
 a.photo:hover .photo-img,
 a.photo.is-open .photo-img {

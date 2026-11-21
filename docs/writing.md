@@ -42,8 +42,9 @@ description: … # optional; search and social previews
 | `página` | standalone pages (`sobre`) | —                                         |
 | `foto`   | a single photo page        | —                                         |
 | `filme`  | a film log entry           | date reads "visto em 19 nov 2026"         |
+| `viagem` | a trip (`viagens/…`)       | —                                         |
 
-The kind and date show in the small line above the title (`/blog/site-novo  post · 19 nov 2026`).
+The kind and date show in the small line above the title (`/blog/gatinho  post · 20 nov 2026`).
 
 The title is rendered for you: don't start the body with `# title`.
 
@@ -113,6 +114,25 @@ On wide screens (over 1000px) they move into the side lanes. Where they go:
 
 The same works for `:::left` and `:::facts`. Notes in a lane are kept 16px apart, never overlap and never run past the page: if they don't fit where they want to be, the others move out of the way of the pinned ones. On narrow screens every note sits in the text where you wrote it, so write pinned notes where they also read well inline (a `{top}` note near the start, a `{bottom}` one near the end). `:::left` shares its lane with the "veio de" (always at the top) and "segue pra" (always at the bottom) links.
 
+### `:foto` and `:revela`: things revealed in the margin
+
+Anything in the margins can start hidden and be uncovered from the text, so the reader builds the page as they read.
+
+```md
+Depois abri o :foto[Refúgio]{src=/sobre/refugio-720x1080.jpg}.
+
+:::right{#claude}
+nota: o claude code também não é nenhum peso pena.
+:::
+
+Tudo junto, menos de 300 MB. Sem contar o :revela[claude code]{#claude}.
+```
+
+- `:foto[label]{src=…}` is the shortcut for a photo: `left` puts it in the other lane, `cap` adds a caption.
+- `:revela[label]{#id}` reveals any side block with that id (`:::right{#id}`, `:::left{#id}`, `:::facts{#id}`). Write the block right before the paragraph it belongs to, like any margin note; pins (`{#id top}`) work too.
+
+The label stays in the text as a link with an icon (a picture for photos, a note for everything else). Clicking shows the block in its lane and clicking again hides it; the lanes make room as things appear. Without the script everything is shown. A `:revela` whose id doesn't exist is just its label.
+
 ### `:::facts`: fact sheet
 
 ```md
@@ -136,6 +156,8 @@ Each `key: value` line becomes a row, shown in the right lane. Values are plain 
 ```
 
 A three-column grid of square photos, captions from the alt text. Plain photos open full screen; linked ones open their page. Use square URLs (`/400/400/…`).
+
+For a few photos, `:::photos{stack}` stacks them one per row at full width, cropped to 3:2, with the same captions and links.
 
 ### Text that looks like a block
 

@@ -36,5 +36,7 @@ For anything visual, also run `npm run dev` and look at the page in a browser.
 ## Gotchas
 
 - After editing `src/lib/remark-blocks.mjs` or `rehype-site.mjs`, Astro serves cached pages. Stop the dev server, delete `.astro/data-store.json` and `node_modules/.astro/data-store.json`, and start it again.
-- Photos are served by [gatinho](https://github.com/guiksr/gatinho) (`/<w>/<h>/<id>`, max 2000px per side), not stored in this repo.
+- The list of existing pages is read when the dev server starts, so links to a newly added page show as missing ("ainda não existe") until you restart it. The build is not affected.
+- A colon followed by a space in a frontmatter value (`description: a: b`) breaks the YAML. Reword it or wrap the value in quotes.
+- Photos live in `public/`, named `<name>-<w>x<h>.jpg` so the build reserves their space; strip EXIF (GPS) before adding them. Placeholders come from [gatinho](https://github.com/guiksr/gatinho) (`/<w>/<h>/<id>`).
 - `dist/`, `.astro/` and `.playwright-mcp/` are build and tool output; never commit them.

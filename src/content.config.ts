@@ -2,7 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
-// src/content/blog/site-novo.md -> /blog/site-novo/
+// src/content/blog/gatinho.md -> /blog/gatinho/
 const pages = defineCollection({
   loader: glob({
     pattern: '**/*.md',
@@ -11,7 +11,7 @@ const pages = defineCollection({
   }),
   schema: z.object({
     title: z.string(),
-    kind: z.enum(['home', 'índice', 'post', 'foto', 'filme', 'página']),
+    kind: z.enum(['home', 'índice', 'post', 'foto', 'filme', 'página', 'viagem']),
     date: z.coerce.date().optional(),
     description: z.string().optional(),
   }),

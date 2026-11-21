@@ -1,5 +1,5 @@
 // Strings the static pages along a diagonal trail. Internal links open beside the
-// current page and the URL keeps the trail: /blog/site-novo/?w=index,blog.
+// current page and the URL keeps the trail: /blog/gatinho/?w=index,blog.
 
 const track = document.getElementById('track') as HTMLElement;
 const firstLeaf = track.querySelector<HTMLElement>('.leaf[data-slug]');
@@ -205,6 +205,7 @@ function trail(firstLeaf: HTMLElement) {
     for (const selector of LANES) {
       const items = [...leaf.querySelectorAll<HTMLElement>(selector)]
         .filter((el) => {
+          if (!el.offsetParent) return false; // a photo not revealed yet
           if (getComputedStyle(el).position === 'absolute') return true;
           el.style.translate = '';
           return false;
@@ -492,6 +493,20 @@ function trail(firstLeaf: HTMLElement) {
 
   lightbox.addEventListener('click', () => closeImage());
 
+  // --- revealed photos
+  // :foto buttons show or hide their photo in the margin; the lanes make room for it.
+
+  function reveal(leaf: HTMLElement, button: HTMLElement) {
+    const note = leaf.querySelector<HTMLElement>(`[data-note="${button.dataset.reveal}"]`);
+    if (!note) return;
+    const shown = note.classList.toggle('is-shown');
+    button.classList.toggle('is-open', shown);
+    button.setAttribute('aria-expanded', String(shown));
+    measure();
+    if (shown && !reduced.matches)
+      note.animate([{ opacity: 0, transform: 'translateY(8px)' }, {}], { duration: 420, easing: EASE });
+  }
+
   // --- events
 
   const plainClick = (e: MouseEvent) => !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0);
@@ -504,6 +519,8 @@ function trail(firstLeaf: HTMLElement) {
 
     const photo = target.closest<HTMLImageElement>('figure.photo img');
     if (photo) return openImage(photo);
+    const button = target.closest<HTMLElement>('[data-reveal]');
+    if (button) return reveal(leaf, button);
     const nav = target.closest<HTMLElement>('.trail-nav');
     if (nav) return scrollToLeaf(+nav.dataset.goto!);
     if (target.closest('.leaf-close')) return close(i);

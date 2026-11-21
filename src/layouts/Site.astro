@@ -3,6 +3,10 @@ import '@fontsource-variable/bricolage-grotesque';
 import '@fontsource/fragment-mono';
 import '@fontsource/fragment-mono/400-italic.css';
 import '../styles/site.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import Lightbox from '../components/Lightbox.astro';
+import Loader from '../components/Loader.astro';
 
 interface Props {
   title: string;
@@ -10,7 +14,6 @@ interface Props {
 }
 const { title, description = 'o cantinho do guiksr na internet.' } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const SECTIONS = ['blog', 'sobre'];
 ---
 
 <!doctype html>
@@ -34,25 +37,8 @@ const SECTIONS = ['blog', 'sobre'];
     </script>
   </head>
   <body>
-    <div class="loader" aria-hidden="true">
-      <div class="loader-steps">
-        <i></i>
-        <i></i>
-        <i></i>
-      </div>
-    </div>
-    <header class="sitebar top">
-      <a class="mark" href="/" data-go="index">
-        guiksr
-      </a>
-      <nav class="sections" aria-label="seções">
-        {SECTIONS.map((s) => (
-          <a href={`/${s}/`} data-go={s}>
-            {s}
-          </a>
-        ))}
-      </nav>
-    </header>
+    <Loader />
+    <Header />
 
     <main class="track" id="track">
       <slot />
@@ -61,17 +47,8 @@ const SECTIONS = ['blog', 'sobre'];
     <div class="veil top"></div>
     <div class="veil bottom"></div>
 
-    <footer class="sitebar bottom">
-      <nav class="crumbs" aria-label="rastro"></nav>
-      <button data-top hidden>
-        voltar ao começo ↑
-      </button>
-    </footer>
-
-    <div class="lightbox" hidden>
-      <img alt="" />
-      <p></p>
-    </div>
+    <Footer />
+    <Lightbox />
 
     <script>
       import '../scripts/trail/index.ts';

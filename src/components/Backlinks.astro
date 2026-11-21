@@ -1,0 +1,26 @@
+---
+import { pathOf } from '../lib/slugs.mjs';
+import type { Backlink } from '../lib/backlinks';
+
+interface Props {
+  backlinks: Backlink[];
+}
+const { backlinks } = Astro.props;
+const shown = (s: string) => `/${s === 'index' ? '' : s}`;
+---
+
+{backlinks.length > 0 && (
+  <footer class="backlinks">
+    <h2>linkado por</h2>
+    <ul>
+      {backlinks.map((b) => (
+        <li>
+          <a class="ilink" href={pathOf(b.slug)} data-slug={b.slug}>
+            {b.title}
+          </a>{' '}
+          <span class="bl-path">{shown(b.slug)}</span>
+        </li>
+      ))}
+    </ul>
+  </footer>
+)}

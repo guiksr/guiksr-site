@@ -1,0 +1,17 @@
+---
+// The mark and the section links: they focus the page if it's on the trail, otherwise open it next.
+const SECTIONS = ['blog', 'sobre'];
+---
+
+<header class="sitebar top">
+  <a class="mark" href="/" data-go="index">
+    guiksr
+  </a>
+  <nav class="sections" aria-label="seções">
+    {SECTIONS.map((s) => (
+      <a href={`/${s}/`} data-go={s}>
+        {s}
+      </a>
+    ))}
+  </nav>
+</header>

@@ -1,6 +1,6 @@
 ---
 import { render, type CollectionEntry } from 'astro:content';
-import { pathOf } from '../lib/slugs.mjs';
+import Backlinks from './Backlinks.astro';
 import type { Backlink } from '../lib/backlinks';
 
 interface Props {
@@ -33,20 +33,6 @@ const date =
   <button class="trail-nav prev" hidden></button>
   <h1>{entry.data.title}</h1>
   <Content />
-  {backlinks.length > 0 && (
-    <footer class="backlinks">
-      <h2>linkado por</h2>
-      <ul>
-        {backlinks.map((b) => (
-          <li>
-            <a class="ilink" href={pathOf(b.slug)} data-slug={b.slug}>
-              {b.title}
-            </a>{' '}
-            <span class="bl-path">{shown(b.slug)}</span>
-          </li>
-        ))}
-      </ul>
-    </footer>
-  )}
+  <Backlinks backlinks={backlinks} />
   <button class="trail-nav next" hidden></button>
 </article>

@@ -21,7 +21,9 @@ Every page is a markdown file in `src/content/`; its path is its address (`src/c
 
 - `src/content.config.ts`: the `pages` collection and its frontmatter schema.
 - `src/pages/[...slug].astro`: one static page per markdown file; `404.astro`.
-- `src/components/Leaf.astro`: one page of the trail (meta, title, content, backlinks).
+- `src/layouts/Site.astro`: the document; `Header`, `Footer`, `Loader` and `Lightbox` are its fixed parts, in `src/components/`.
+- `src/components/Leaf.astro`: one page of the trail (meta, title, content); `Backlinks.astro` is its "linkado por".
+- `src/styles/site.css`: imports one file per area (`base`, `trail`, `photos`, `lanes`, `chrome`, `loader`, `lightbox`, `motion`); the build joins them into one stylesheet.
 - `src/lib/remark-blocks.mjs`, `rehype-site.mjs`: the blocks above, links and photos.
 - `src/scripts/trail/`: the script. Without it, every page still works on its own.
   - `index.ts`: builds the trail, opens and closes pages, wires the events.

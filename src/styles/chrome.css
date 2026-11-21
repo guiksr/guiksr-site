@@ -14,10 +14,12 @@
 }
 .sitebar.top {
   top: 0;
+  padding-top: calc(16px + env(safe-area-inset-top));
   justify-content: space-between;
 }
 .sitebar.bottom {
   bottom: 0;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 .sitebar a,
 .sitebar button {
@@ -81,35 +83,22 @@
   }
 }
 
+/* with viewport-fit=cover the veils reach under Safari's bars on iOS, so the page doesn't
+   show through there; the bars' text keeps clear with the safe-area padding */
 .veil {
   position: fixed;
   left: 0;
   right: 0;
-  height: 16vh;
   pointer-events: none;
   z-index: 5;
 }
 .veil.top {
   top: 0;
+  height: calc(16vh + env(safe-area-inset-top));
   background: linear-gradient(var(--night) 35%, transparent);
 }
 .veil.bottom {
   bottom: 0;
+  height: calc(16vh + env(safe-area-inset-bottom));
   background: linear-gradient(transparent, var(--night) 65%);
-}
-/* Safari on iOS draws the page under its bars, past where bottom: 0 ends; a solid
-   block hangs off each veil to cover it */
-.veil::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 200px;
-  background: var(--night);
-}
-.veil.top::after {
-  bottom: 100%;
-}
-.veil.bottom::after {
-  top: 100%;
 }

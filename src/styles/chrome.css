@@ -83,22 +83,28 @@
   }
 }
 
-/* with viewport-fit=cover the veils reach under Safari's bars on iOS, so the page doesn't
-   show through there; the bars' text keeps clear with the safe-area padding */
+/* Phone browsers draw the page under their bars, past where a fixed bottom: 0 ends. Each
+   veil carries a solid strip as padding and is pushed out by it, so that strip covers
+   the page there. */
 .veil {
+  --past: 200px;
   position: fixed;
   left: 0;
   right: 0;
+  box-sizing: border-box;
+  height: calc(16vh + var(--past));
   pointer-events: none;
   z-index: 5;
 }
 .veil.top {
   top: 0;
-  height: calc(16vh + env(safe-area-inset-top));
-  background: linear-gradient(var(--night) 35%, transparent);
+  padding-top: var(--past);
+  transform: translateY(calc(-1 * var(--past)));
+  background: linear-gradient(var(--night) calc(var(--past) + 5.6vh), transparent);
 }
 .veil.bottom {
   bottom: 0;
-  height: calc(16vh + env(safe-area-inset-bottom));
-  background: linear-gradient(transparent, var(--night) 65%);
+  padding-bottom: var(--past);
+  transform: translateY(var(--past));
+  background: linear-gradient(transparent, var(--night) 10.4vh);
 }

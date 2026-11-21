@@ -5,6 +5,15 @@
     "trailingSlash": true,
     "headers": [
       {
+        "regex": "^[^.]*$",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
         "source": "/_astro/**",
         "headers": [
           {

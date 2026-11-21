@@ -19,10 +19,6 @@
 .sitebar.bottom {
   bottom: 0;
 }
-/* solid, so Safari on iOS paints its bars in the same color instead of the page under them */
-.sitebar {
-  background-color: var(--night);
-}
 .sitebar a,
 .sitebar button {
   border: 0;
@@ -100,4 +96,20 @@
 .veil.bottom {
   bottom: 0;
   background: linear-gradient(transparent, var(--night) 65%);
+}
+/* Safari on iOS draws the page under its bars, past where bottom: 0 ends; a solid
+   block hangs off each veil to cover it */
+.veil::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: var(--night);
+}
+.veil.top::after {
+  bottom: 100%;
+}
+.veil.bottom::after {
+  top: 100%;
 }

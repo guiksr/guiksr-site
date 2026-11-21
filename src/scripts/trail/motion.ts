@@ -20,8 +20,20 @@ let marks: { anchor: number; start: number; x: number }[] = [];
 let anims: Animation[] = [];
 const shown: string[] = [];
 
+// Phone browsers grow and shrink the viewport as their bars hide while scrolling; the
+// trail keeps the height it was laid out for until the width changes, so it doesn't jump.
+const touch = matchMedia('(pointer: coarse)');
+let vw = innerWidth;
+let vh = innerHeight;
+
+export function resize() {
+  if (touch.matches && innerWidth === vw) return;
+  vw = innerWidth;
+  vh = innerHeight;
+  measure();
+}
+
 export function measure() {
-  const vh = innerHeight;
   const rest = (el: HTMLElement) => Math.max(EDGE, (vh - el.offsetHeight) / 2);
   state.leaves.forEach(settleLanes);
 

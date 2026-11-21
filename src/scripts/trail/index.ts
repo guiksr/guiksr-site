@@ -3,7 +3,7 @@
 
 import { readUrl, slugOf, writeUrl } from './address';
 import { closeImage, lightboxOpen, openImage } from './lightbox';
-import { enter, kick, leave, measure, scrollToLeaf, startMotion } from './motion';
+import { enter, kick, leave, measure, resize, scrollToLeaf, startMotion } from './motion';
 import { leafFor, noteMissing, prefetch, seed } from './pages';
 import { pixelate } from './photos';
 import { reveal } from './reveal';
@@ -145,7 +145,7 @@ function start(first: HTMLElement) {
     },
     { passive: true },
   );
-  addEventListener('resize', measure);
+  addEventListener('resize', resize);
 
   addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;

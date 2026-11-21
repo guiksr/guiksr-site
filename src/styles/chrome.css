@@ -81,19 +81,22 @@
   }
 }
 
+/* the veils reach past the screen edges: Safari on iOS draws the page under its bars,
+   where bottom: 0 doesn't go */
 .veil {
+  --past: 30vh;
   position: fixed;
   left: 0;
   right: 0;
-  height: 16vh;
+  height: calc(16vh + var(--past));
   pointer-events: none;
   z-index: 5;
 }
 .veil.top {
-  top: 0;
-  background: linear-gradient(var(--night) 35%, transparent);
+  top: calc(-1 * var(--past));
+  background: linear-gradient(var(--night) calc(var(--past) + 5.6vh), transparent);
 }
 .veil.bottom {
-  bottom: 0;
-  background: linear-gradient(transparent, var(--night) 65%);
+  bottom: calc(-1 * var(--past));
+  background: linear-gradient(transparent, var(--night) 10.4vh);
 }

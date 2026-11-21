@@ -14,10 +14,12 @@
 }
 .sitebar.top {
   top: 0;
+  padding-top: calc(16px + env(safe-area-inset-top));
   justify-content: space-between;
 }
 .sitebar.bottom {
   bottom: 0;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 .sitebar a,
 .sitebar button {
@@ -81,19 +83,45 @@
   }
 }
 
+/* Phone browsers draw the page under their bars, past where a fixed bottom: 0 ends. Each
+   veil carries a strip as padding and is pushed out by it, so that strip covers the page
+   there. Safari on iOS clips fully opaque fixed layers at its bars, so the veils stop just
+   short of opaque. */
 .veil {
+  --past: 200px;
+  --shade: oklch(from var(--night) l c h / 0.99);
   position: fixed;
   left: 0;
   right: 0;
-  height: 16vh;
+  box-sizing: border-box;
+  height: calc(16vh + var(--past));
   pointer-events: none;
   z-index: 5;
 }
 .veil.top {
   top: 0;
-  background: linear-gradient(var(--night) 35%, transparent);
+  padding-top: var(--past);
+  transform: translateY(calc(-1 * var(--past)));
+  background: linear-gradient(var(--shade) calc(var(--past) + 5.6vh), transparent);
 }
 .veil.bottom {
   bottom: 0;
-  background: linear-gradient(transparent, var(--night) 65%);
+  padding-bottom: var(--past);
+  transform: translateY(var(--past));
+  background: linear-gradient(transparent, var(--shade) 10.4vh);
+}
+
+/* TEMP: iOS veil debug, see Site.astro */
+.ios-opaque .veil {
+  --shade: var(--night);
+}
+.ios-red .veil {
+  --shade: oklch(0.6 0.25 25 / 0.99);
+}
+.ios-red.ios-opaque .veil {
+  --shade: oklch(0.6 0.25 25);
+}
+.ios-noclip,
+.ios-noclip body {
+  overflow-x: visible;
 }

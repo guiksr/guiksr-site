@@ -34,6 +34,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:url" content={canonical} />
     <script is:inline>
       document.documentElement.classList.add('js');
+      // TEMP: iOS veil debug, ?ios=red,opaque,noclip,cover
+      for (const f of (new URLSearchParams(location.search).get('ios') || '').split(',').filter(Boolean)) {
+        document.documentElement.classList.add('ios-' + f);
+        if (f === 'cover')
+          document
+            .querySelector('meta[name=viewport]')
+            .setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
+      }
     </script>
   </head>
   <body>

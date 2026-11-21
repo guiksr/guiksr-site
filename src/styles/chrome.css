@@ -110,3 +110,18 @@
   transform: translateY(var(--past));
   background: linear-gradient(transparent, var(--shade) 10.4vh);
 }
+
+/* TEMP: iOS veil debug, see Site.astro */
+.ios-opaque .veil {
+  --shade: var(--night);
+}
+.ios-red .veil {
+  --shade: oklch(0.6 0.25 25 / 0.99);
+}
+.ios-red.ios-opaque .veil {
+  --shade: oklch(0.6 0.25 25);
+}
+.ios-noclip,
+.ios-noclip body {
+  overflow-x: visible;
+}

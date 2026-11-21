@@ -84,10 +84,12 @@
 }
 
 /* Phone browsers draw the page under their bars, past where a fixed bottom: 0 ends. Each
-   veil carries a solid strip as padding and is pushed out by it, so that strip covers
-   the page there. */
+   veil carries a strip as padding and is pushed out by it, so that strip covers the page
+   there. Safari on iOS clips fully opaque fixed layers at its bars, so the veils stop just
+   short of opaque. */
 .veil {
   --past: 200px;
+  --shade: oklch(from var(--night) l c h / 0.99);
   position: fixed;
   left: 0;
   right: 0;
@@ -100,11 +102,11 @@
   top: 0;
   padding-top: var(--past);
   transform: translateY(calc(-1 * var(--past)));
-  background: linear-gradient(var(--night) calc(var(--past) + 5.6vh), transparent);
+  background: linear-gradient(var(--shade) calc(var(--past) + 5.6vh), transparent);
 }
 .veil.bottom {
   bottom: 0;
   padding-bottom: var(--past);
   transform: translateY(var(--past));
-  background: linear-gradient(transparent, var(--night) 10.4vh);
+  background: linear-gradient(transparent, var(--shade) 10.4vh);
 }

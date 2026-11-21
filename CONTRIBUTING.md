@@ -11,6 +11,10 @@ There are only two:
 
 Don't create other branches unless asked. Don't push, merge into `main` or force-push without being asked.
 
+## Deploy
+
+Firebase Hosting, project `guiksr` (https://guiksr.web.app). Pushing to `main` publishes the site (`.github/workflows/deploy.yml`); every pull request gets a 7-day preview URL commented on it (`preview.yml`). Both need the `FIREBASE_SERVICE_ACCOUNT_GUIKSR` secret in the repo. `npm run deploy` publishes from your machine; don't run it unless asked.
+
 ## Before committing
 
 ```sh

@@ -65,6 +65,4 @@ Algumas coisas que deixaram ele mais útil pra mim:
 - **skills próprias** pra tarefas que eu repito, como abrir PR e fazer deploy;
 - **um `CLAUDE.md` global** com as minhas regras, tipo commit de uma linha só e sem assinatura no fim.
 
-## no fim
-
-O terminal virou uma mesa de trabalho: o ghostty é a mesa, o herdr organiza as pilhas, o ttt é onde eu leio e o claude code é quem faz. Nada disso estava aqui um ano atrás, então provavelmente vai mudar de novo.
+É o setup de hoje, e ainda estou ajustando. Se alguma coisa mudar, eu atualizo aqui.

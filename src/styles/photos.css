@@ -50,6 +50,13 @@ a.photo.is-open .photo-img {
 a.photo.is-open .photo-cap {
   color: var(--link);
 }
+/* a linked photo opens a page, like the links in the text */
+a.photo .photo-cap::after {
+  content: ' →';
+}
+a.photo:hover .photo-cap {
+  color: var(--link);
+}
 .js .leaf figure.photo img {
   cursor: zoom-in;
 }

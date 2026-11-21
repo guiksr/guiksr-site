@@ -14,12 +14,10 @@
 }
 .sitebar.top {
   top: 0;
-  padding-top: calc(16px + env(safe-area-inset-top));
   justify-content: space-between;
 }
 .sitebar.bottom {
   bottom: 0;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 .sitebar a,
 .sitebar button {
@@ -83,28 +81,19 @@
   }
 }
 
-/* Phone browsers draw the page under their bars, past where a fixed bottom: 0 ends. Each
-   veil carries a solid strip as padding and is pushed out by it, so that strip covers
-   the page there. */
 .veil {
-  --past: 200px;
   position: fixed;
   left: 0;
   right: 0;
-  box-sizing: border-box;
-  height: calc(16vh + var(--past));
+  height: 16vh;
   pointer-events: none;
   z-index: 5;
 }
 .veil.top {
   top: 0;
-  padding-top: var(--past);
-  transform: translateY(calc(-1 * var(--past)));
-  background: linear-gradient(var(--night) calc(var(--past) + 5.6vh), transparent);
+  background: linear-gradient(var(--night) 35%, transparent);
 }
 .veil.bottom {
   bottom: 0;
-  padding-bottom: var(--past);
-  transform: translateY(var(--past));
-  background: linear-gradient(transparent, var(--night) 10.4vh);
+  background: linear-gradient(transparent, var(--night) 65%);
 }

@@ -1,6 +1,6 @@
 # guiksr.com
 
-Personal site. Built with [Astro](https://astro.build) as plain static pages; one script (`src/scripts/trail.ts`) turns navigation into a trail of pages along a diagonal.
+Personal site. Built with [Astro](https://astro.build) as plain static pages; one script (`src/scripts/trail/`) turns navigation into a trail of pages along a diagonal.
 
 Needs Node 22.23.4 or newer (`.nvmrc` pins it; run `nvm use`).
 
@@ -23,5 +23,8 @@ Every page is a markdown file in `src/content/`; its path is its address (`src/c
 - `src/pages/[...slug].astro`: one static page per markdown file; `404.astro`.
 - `src/components/Leaf.astro`: one page of the trail (meta, title, content, backlinks).
 - `src/lib/remark-blocks.mjs`, `rehype-site.mjs`: the blocks above, links and photos.
-- `src/scripts/trail.ts`: the trail, motion, margin lanes and lightbox. Without it, every page still works on its own.
+- `src/scripts/trail/`: the script. Without it, every page still works on its own.
+  - `index.ts`: builds the trail, opens and closes pages, wires the events.
+  - `state.ts`: what the modules share (the slugs, their pages, the one in focus).
+  - `address.ts` (the URL), `pages.ts` (fetch and cache), `motion.ts` (scrolling along the trail), `lanes.ts` (margin notes), `photos.ts` (mosaic), `lightbox.ts`, `reveal.ts` (`:foto` and `:revela`).
 - Design notes: `PRODUCT.md`, `DESIGN.md`.
